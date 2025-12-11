@@ -123,19 +123,19 @@ qa_data_list$DelawareInland$flags_revision <- qa_data_list$DelawareInland$flags
 
 qa_data_list$IndianRiverLagoon$flags_revision <- qa_data_list$IndianRiverLagoon$flags
 
-# testing:
+## testing:
 irl_limit = qa_data_list_revision$IndianRiverLagoon[qa_data_list_revision$IndianRiverLagoon$co2.ppm < 10000]
-plot(irl_limit$datetime.utc,irl_limit$co2.ppm)
+# plot(irl_limit$datetime.utc,irl_limit$co2.ppm)
 
 irl_filter = qa_data_list_revision$IndianRiverLagoon %>% 
   filter(co2.ppm < 10,000 & datetime.utc > irl_cutoff)
 
+# plotting IRL data with filtered "cap" on co2 data
+# ggplot(irl_filter, aes(datetime.utc,co2.ppm,color = flags))+
+#   geom_point()+
+#   ylim(c(0,10000))
 
-ggplot(irl_filter, aes(datetime.utc,co2.ppm,color = flags))+
-  geom_point()+
-  ylim(c(0,10000))
-
-# /testing
+## /testing
 
 #Comment: co2.ppm values flagged as good
 #Revision: no change needed
