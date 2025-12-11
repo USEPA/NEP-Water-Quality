@@ -46,7 +46,7 @@ library(dataCompareR)
 # Load original qa_data_list from O: drive
 data_path = 'O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/4. Finalized Data from NEPs/'
 load(paste0(data_path,'qa_data_list.Rdata'))
-
+Odrive_data_path = 'O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/'
 
 ##### Barnegat Bay ###############################################
 
@@ -123,33 +123,50 @@ qa_data_list$DelawareInland$flags_revision <- qa_data_list$DelawareInland$flags
 
 qa_data_list$IndianRiverLagoon$flags_revision <- qa_data_list$IndianRiverLagoon$flags
 
+# testing:
+irl_limit = qa_data_list_revision$IndianRiverLagoon[qa_data_list_revision$IndianRiverLagoon$co2.ppm < 10000]
+plot(irl_limit$datetime.utc,irl_limit$co2.ppm)
+
+irl_filter = qa_data_list_revision$IndianRiverLagoon %>% 
+  filter(co2.ppm < 10,000 & datetime.utc > irl_cutoff)
+
+
+ggplot(irl_filter, aes(datetime.utc,co2.ppm,color = flags))+
+  geom_point()+
+  ylim(c(0,10000))
+
+# /testing
 
 #Comment: co2.ppm values flagged as good
 #Revision: no change needed
 
 #Comment: co2.ppm values >1,000,000 flagged as good
-#Revision: Flag co2.ppm values > 2,000 as suspect, NEED TO CONTACT IRL NEP !!!
+#Revision: Flag co2.ppm values > 2,000 as suspect, NEED TO CONTACT IRL NEP !!! [AWM to SRP: was this resolved? !~!]
 # ---- AWM: 12.11.25 re-wrote the following section to use dplyr: ----
 qa_data_list$IndianRiverLagoon = qa_data_list$IndianRiverLagoon %>% 
   mutate(flags_revision = if_else(
     co2.ppm > 2000 & flags == 1, # if co2 > 2000 ppm & flags == 1...
     2,                           # then: make flags_revision = 2
     flags_revision               # else: keep the same
+  )) %>% 
+  #Comment: 10/18/2022 12:00 do.mgl of 44.42 flagged as good
+  #Revision: Flagging do.mgl values > 20 as suspect "2"
+  mutate(flags_revision = if_else(
+    do.mgl > 20 & flags == 1,
+    2,
+    flags_revision
+  )) %>% 
+  #Comment: Sal.ppt values ~66 flagged as good
+  #Revision: Salinity data > 40 should be flagged as suspect according to 7/9/25 email from Kristen Davis
+  mutate(flags_revision = if_else(
+    sal.ppt > 40 & flags == 1,
+    2,
+    flags_revision
   ))
+# ---- AWM: end 12.11.25 edited block ----
 
 #Comment: large number of do.mgl values at 0.00, these are flagged as good
 #Revision: No change needed
-
-
-#Comment: 10/18/2022 12:00 do.mgl of 44.42 flagged as good
-#Revision: Flagging do.mgl values > 20 as suspect "2"
-indices_temp <- which(qa_data_list$IndianRiverLagoon$do.mgl > 20 & qa_data_list$IndianRiverLagoon$flags ==1)
-qa_data_list$IndianRiverLagoon$flags_revision[indices_temp] <- 2
-
-#Comment: Sal.ppt values ~66 flagged as good
-#Revision: Salinity data > 40 should be flagged as suspect according to 7/9/25 email from Kristen Davis
-indices_temp <- which(qa_data_list$IndianRiverLagoon$sal.ppt > 40 & qa_data_list$IndianRiverLagoon$flags ==1)
-qa_data_list$IndianRiverLagoon$flags_revision[indices_temp] <- 2
 
 #Comment: Negative depth values flagged as good
 #Revision: SRP checked and no negative values flagged with 1; no change needed
@@ -173,18 +190,28 @@ qa_data_list$LongIslandSound$flags_revision <- qa_data_list$LongIslandSound$flag
 #Comment: Flags not present for any data
 #Revision: Data aleady delivered post-QC; no revision needed
 
+# ---- AWM: 12.11.25 re-wrote the following section to use dplyr: ----
 #Comment: Large number of unreasonably low ph and ph.T values
 #Revision: Flag pH values <6 and >9 as suspect "2"
-indices_temp <- which(qa_data_list$LongIslandSound$ph.T < 6 & qa_data_list$LongIslandSound$flags ==1)
-qa_data_list$LongIslandSound$flags_revision[indices_temp] <- 2
-
-indices_temp <- which(qa_data_list$LongIslandSound$ph.T > 9 & qa_data_list$LongIslandSound$flags ==1)
-qa_data_list$LongIslandSound$flags_revision[indices_temp] <- 2
-
+qa_data_list$LongIslandSound = qa_data_list$LongIslandSound %>% 
+  mutate(flags_revision = if_else(
+    ph.T < 6 & flags == 1,
+    2,
+    flags_revision
+  )) %>% 
+  mutate(flags_revision = if_else(
+    ph.T > 9 & flags == 1,
+    2,
+    flags_revision
+  )) %>% 
 #Comment: Large number of negative do.mgl values
 #Revision: Flag do.mgl values <0 as suspect
-indices_temp <- which(qa_data_list$LongIslandSound$do.mgl < 0 & qa_data_list$LongIslandSound$flags ==1)
-qa_data_list$LongIslandSound$flags_revision[indices_temp] <- 2
+  mutate(flags_revision = if_else(
+    do.mgl < 0 & flags == 1,
+    2,
+    flags_revision
+  ))
+# ---- AWM: end 12.11.25 edited block ----
 
 
 ##### Mobile Bay ###############################################
@@ -192,7 +219,7 @@ qa_data_list$LongIslandSound$flags_revision[indices_temp] <- 2
 qa_data_list$Mobile$flags_revision <- qa_data_list$Mobile$flags
 
 #Comment: Flag labels <-3> [STF] do not match description in NEP_data_column_descriptions.xlsx file
-#Revision: ASK ANDREW !!!
+#Revision: 
 # --> Andrew 12/5/25: [STF] refers to "catestrophric temperature sensor failure" which matches the temp.c values all = 50 C.
 # Resolution: added description for [STF] among others in NEP_data_column_descriptions.xlsx file on O:drive (folder /5. .../ ). 
 
@@ -217,9 +244,11 @@ qa_data_list$Morro$flags_revision <- qa_data_list$Morro$flags
 ##### Narragansett ###############################################
 
 qa_data_list$Narrgansett$flags_revision <- qa_data_list$Narrgansett$flags
+# replace mispelled 'Narrgansett' with correctly spelled 'Narragansett':
 qa_data_list$Narragansett <- qa_data_list$Narrgansett
 qa_data_list[["Narrgansett"]] <-NULL
-
+# re-alphabetize qa_data_list:
+qa_data_list = qa_data_list[order(names(qa_data_list))]
 
 #Comment:	Flags not present for any data
 #Revision: No change needed
@@ -268,14 +297,21 @@ attr(qa_data_list$NYNJH$datetime.utc, "tzone") <- "UTC"
 #Comment:	negative ph values flagged with S (suspect) rather than R (reject)
 #Revision: SRP checked - no change needed
 
+# ---- AWM: 12.11.25 re-wrote the following section to use dplyr: ----
 #Comment:	ph values > 9 flagged with A (accept)
 #Revision: Flagging values <6 and >9 as suspect (2)
-indices_temp <- which(qa_data_list$NYNJH$ph.T < 6 & qa_data_list$NYNJH$flags ==1)
-qa_data_list$NYNJH$flags_revision[indices_temp] <- 2
-
-indices_temp <- which(qa_data_list$NYNJH$ph.T > 9 & qa_data_list$NYNJH$flags ==1)
-qa_data_list$NYNJH$flags_revision[indices_temp] <- 2
-
+qa_data_list$NYNJH = qa_data_list$NYNJH %>% 
+  mutate(flags_revision = if_else(
+    ph.T < 6 & flags == 1,
+    2,
+    flags_revision
+  )) %>% 
+  mutate(flags_revision = if_else(
+    ph.T > 9 & flags == 1,
+    2,
+    flags_revision
+  ))
+# ---- AWM: end 12.11.25 edited block ----
 
 ##### Pensacola ###############################################
 
@@ -295,8 +331,10 @@ qa_data_list$SanFrancisco$flags_revision <- qa_data_list$SanFrancisco$flags
 #Revision: no change needed
 #Comment: ph.tot.qc displays 4 (fail) when ph values = ~
 #Revision: no change needed
-#Comment: sal.ppt.qc displays 1 (pass) when ph values > 40, these salinity values are unlikely at site: CARQ, 38.0657 -122.2302
-#Revision: NEED TO COME BACK TO !!!
+#Comment: sal.ppt.qc displays 1 (pass) when sal values > 40, these salinity values are unlikely at site: CARQ, 38.0657 -122.2302
+#Revision: NEED TO COME BACK TO !!! [!~! was this addressed?]
+# plot to view time-series of "passing" salinity data for SF:
+#plot(pass_data_list_revision$SanFrancisco$datetime.utc,pass_data_list_revision$SanFrancisco$sal.ppt)
 
 
 ##### Tampa ###############################################
@@ -306,7 +344,7 @@ qa_data_list$Tampa$flags_revision <- qa_data_list$Tampa$flags
 #Comment: Are flags 1 and 15 interchangeable? Reasonable values for sal.ppt, do.mgl, and ph.tot are flagged as both 1 and 15.
 
 #Comment: qf.co2 displays 4 (????) when co2.ppm values = 0, if 4 means fail in this context, then proceed. It appears  from the “NEP_data_columns.xlsx” that every number from 1 – 15 might indicate pass. If this is the case then there are very larg amount of -99 and 0 values for: “temp.c", "depth.m", "sal.ppt", "ph.tot", "co2.ppm", "do.mgl" that need to be marked as failed. 
-#Revision: NEED TO COME BACK TO !!!
+#Revision: NEED TO COME BACK TO !!! [!~! was this addressed?]
 
 
 ##### Tillamook ###############################################
@@ -331,8 +369,14 @@ library(lubridate)
 data_tillamook <- read.csv(data_path_tillamook, stringsAsFactors = FALSE)
 
 # Assume the timestamp column is named 'Timestamp'
-# Convert the 'Timestamp' column to POSIXct format with timezone set to UTC
-data_tillamook$datetime_pst <- as.POSIXct(data_tillamook$datetime_pst, format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
+
+# ---- AWM: 12.11.25 re-wrote the following section: ----
+# Convert the 'Timestamp' column to POSIXct format with timezone set to PST (GMT -8)
+data_tillamook$datetime_pst <- as.POSIXct(data_tillamook$datetime_pst, format = "%Y-%m-%d %H:%M:%S", tz = "Etc/GMT+8")
+
+# create datetime_utc column
+data_tillamook$datetime_utc = with_tz(data_tillamook$datetime_pst, tzone='UTC')
+# ---- AWM: end 12.11.25 edited block ----
 
 # Replace old tillamook data with new
 qa_data_list$Tillamook <- data_tillamook
@@ -343,7 +387,7 @@ qa_data_list$Tillamook <- data_tillamook
 
 qa_data_list$PugetSound$flags_revision <- qa_data_list$PugetSound$flags
 #Comment:	No QA flag glossary given for this site
-#Revision: ASK ANDREW!!!
+#Revision: Added to NEP_data_column_descriptions.xlsx
 
 #Comment:	All data looks reasonable
 #Revision: No change needed
@@ -356,8 +400,6 @@ qa_data_list$PugetSound$flags_revision <- qa_data_list$PugetSound$flags
 ################################################################################
 ## Create new dataframe with "pass" data only based on flags_revision column ###
 ################################################################################
-library(dplyr)
-library(arsenal)
 
 
 pass_data_list_revision <- list()
@@ -368,6 +410,7 @@ qa_data_list_revision <- qa_data_list
 ## Create cutoff date to filter data_list with, for 2015-present
 cutoff_date = as.POSIXct('2014-12-31 23:59:59',format='%Y-%m-%d %H:%M:%S', tz='UTC')
 
+####   Filter data with new flags_revision column ####
 # Barnegat
 pass_data_list_revision$Barnegat = qa_data_list_revision$Barnegat |>
   filter(datetime.utc > cutoff_date & flags_revision == 1)
@@ -414,8 +457,13 @@ data_path_tillamook_pass = "O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monito
 # Import the CSV file into R
 data_tillamook_pass <- read.csv(data_path_tillamook_pass, stringsAsFactors = FALSE)
 
-# Convert the 'Timestamp' column to POSIXct format with timezone set to UTC
-data_tillamook_pass$datetime_pst <- as.POSIXct(data_tillamook_pass$datetime_pst, format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
+# ---- AWM: 12.11.25 re-wrote the following section: ----
+# Convert the 'Timestamp' column to POSIXct format with timezone set to PST (GMT -8)
+data_tillamook_pass$datetime_pst <- as.POSIXct(data_tillamook_pass$datetime_pst, format = "%Y-%m-%d %H:%M:%S", tz = "Etc/GMT+8")
+
+# create datetime_utc column
+data_tillamook_pass$datetime_utc = with_tz(data_tillamook_pass$datetime_pst, tzone='UTC')
+# ---- AWM: end 12.11.25 edited block ----
 
 # Replace old tillamook data with new
 pass_data_list_revision$Tillamook <- data_tillamook_pass
@@ -448,7 +496,6 @@ pass_data_list_revision$Barnegat = pass_data_list_revision$Barnegat %>%
   )) %>% 
   select(-Comments) 
 
-Odrive_data_path = 'O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/'
 #### Removing unnecessary co2.ppm columns: ####
 # Remove co2.ppm columns for NEPs that don't have: Bar, Del, Cas, Mob, Pen
 qa_data_list_revision$Cascobay = qa_data_list_revision$Cascobay %>% select(-co2.ppm)
@@ -634,7 +681,11 @@ if (!'sensor.SAMICO2' %in% colnames(pass_data_list_revision$Tillamook)) {
     ))
 }
 
-####### Update column names for all NEPs when necessary to eliminate '.' in names######
+###############################################################################
+###########    Additional Edits by Andrew, Dec 11-12 2025     #################
+###############################################################################
+
+####### Update column names for all NEPs when necessary to eliminate '.' in names ######
 
 
 
