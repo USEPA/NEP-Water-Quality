@@ -9,7 +9,7 @@
 #                    -------------------------------------
 #  1. Revises qa_data_list following internal EPA reviews from 1). Pimenta and 2). Alford
 #  2. Updates Tillamook data with latest QC version 12/9/2025
-#  3. Creates an output file containing the updated dataset: qa_data_list_revision.Rdata 
+#  3. Creates an output file containing the updated datasets: qa_data_list_revision.Rdata and pass_data_list_revision.Rdata
 # 
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 # library(plyr) #Earlier version of dplyr
@@ -708,3 +708,4 @@ save(pass_data_list_revision,file="O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification
 
 # save(qa_data_list_revision,file="C:/Users/spacella/OneDrive - Environmental Protection Agency (EPA)/NEP OA standards analysis/qa_data_list_revision.Rdata")
 # save(pass_data_list_revision,file="C:/Users/spacella/OneDrive - Environmental Protection Agency (EPA)/NEP OA standards analysis/pass_data_list_revision.Rdata")
+
