@@ -1,7 +1,8 @@
 # Stephen R. Pacella
 # EPA Office of Research and Development, Pacific Coastal Ecology Branch, Newport, OR
 # Originally created: June 25, 2025
-# Last updated: Dec 5, 2025
+# Last updated: Dec 12, 2025
+# Edits by Andrew Mandovi (ORISE) denoted by 'AWM' initials
 
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 #                    This R script performs the following: 
@@ -11,7 +12,7 @@
 #  3. Creates an output file containing the updated dataset: qa_data_list_revision.Rdata 
 # 
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-library(plyr) #Earlier version of dplyr
+# library(plyr) #Earlier version of dplyr
 library(tidyverse) #User-friendly data manipulations
 library(lubridate) #Manipulating all sorts of date types
 library(magrittr) #Pipe operations
@@ -64,21 +65,28 @@ qa_data_list$Barnegat$flags_revision <- qa_data_list$Barnegat$flags
 
 qa_data_list$Cascobay$flags_revision <- qa_data_list$Cascobay$flags
 
-#Comment: Negative depths marked with flag #1
-#Revision: Flag depths < 0 as "2"
-indices_temp <- which(qa_data_list$Cascobay$depth.m <0 & qa_data_list$Cascobay$flags == 1)
-qa_data_list$Cascobay$flags_revision[indices_temp] <- 2
-
-#Comment: Many instances of negative alkalinity values marked with flag #1
-#Revision: Flag alk <0 & flags = 1 as "2"
-indices_temp <- which(qa_data_list$Cascobay$alk.mgl <0 & qa_data_list$Cascobay$flags ==1)
-qa_data_list$Cascobay$flags_revision[indices_temp] <- 2
-
+# ---- AWM: 12.11.25 Rewrote following block (received error, now using dplyr functions) ----
+#Comment: Negative depths and alkalinity values marked with flag #1
+#Revision: Flag depths < 0 and alk < 0 as "2"
+qa_data_list$Cascobay = qa_data_list$Cascobay %>% 
+  mutate(flags_revision = if_else(
+    depth.m < 0 & flags == 1, # if depth is negative & flags == 1
+    2,                        # then: make flags_revision = 2
+    flags_revision)) %>%      # else: keep same value 
+  mutate(flags_revision = if_else(
+    alk.mgl < 0 & flags == 1,
+    2,
+    flags_revision))
 #Comment: Alk.mgl order of magnitude too high???? I think this is the case or the column name is incorrect.
 #Revision: adjusted columns to properly be named alk.umolkg, which aligns with other uses. 
+if ('alk.mgl' %in% names(qa_data_list$Cascobay)) {
+  qa_data_list$Cascobay = qa_data_list$Cascobay %>% 
+    rename(alk.umolkg = alk.mgl)
+}
+# ---- AWM: end 12.11.25 edited block ----
 
 #Compare old vs new flags
-qa_data_list$Cascobay[qa_data_list$Cascobay$flags != qa_data_list$Cascobay$flags_revision, ]
+# qa_data_list$Cascobay[qa_data_list$Cascobay$flags != qa_data_list$Cascobay$flags_revision, ]
 
 
 ##### Coastal Bend ###############################################
@@ -121,8 +129,13 @@ qa_data_list$IndianRiverLagoon$flags_revision <- qa_data_list$IndianRiverLagoon$
 
 #Comment: co2.ppm values >1,000,000 flagged as good
 #Revision: Flag co2.ppm values > 2,000 as suspect, NEED TO CONTACT IRL NEP !!!
-indices_temp <- which(qa_data_list$IndianRiverLagoon$co2.ppm > 2000 & qa_data_list$IndianRiverLagoon$flags ==1)
-qa_data_list$IndianRiverLagoon$flags_revision[indices_temp] <- 2
+# ---- AWM: 12.11.25 re-wrote the following section to use dplyr: ----
+qa_data_list$IndianRiverLagoon = qa_data_list$IndianRiverLagoon %>% 
+  mutate(flags_revision = if_else(
+    co2.ppm > 2000 & flags == 1, # if co2 > 2000 ppm & flags == 1...
+    2,                           # then: make flags_revision = 2
+    flags_revision               # else: keep the same
+  ))
 
 #Comment: large number of do.mgl values at 0.00, these are flagged as good
 #Revision: No change needed
