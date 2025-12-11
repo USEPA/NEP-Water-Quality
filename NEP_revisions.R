@@ -332,9 +332,7 @@ qa_data_list$SanFrancisco$flags_revision <- qa_data_list$SanFrancisco$flags
 #Comment: ph.tot.qc displays 4 (fail) when ph values = ~
 #Revision: no change needed
 #Comment: sal.ppt.qc displays 1 (pass) when sal values > 40, these salinity values are unlikely at site: CARQ, 38.0657 -122.2302
-#Revision: NEED TO COME BACK TO !!! [!~! was this addressed?]
-# plot to view time-series of "passing" salinity data for SF:
-#plot(pass_data_list_revision$SanFrancisco$datetime.utc,pass_data_list_revision$SanFrancisco$sal.ppt)
+#Revision: NEED TO COME BACK TO !!! [!~! was this addressed?] --> continued around line ~683
 
 
 ##### Tampa ###############################################
@@ -681,9 +679,19 @@ if (!'sensor.SAMICO2' %in% colnames(pass_data_list_revision$Tillamook)) {
     ))
 }
 
+
+####  San Francisco Salinity Issue: continued from lines ~334-335 ####
+
+# plot to view time-series of "passing" salinity data for SF:
+#plot(pass_data_list_revision$SanFrancisco$datetime.utc,pass_data_list_revision$SanFrancisco$sal.ppt)
+
+
 ###############################################################################
 ###########    Additional Edits by Andrew, Dec 11-12 2025     #################
 ###############################################################################
+
+
+
 
 ####### Update column names for all NEPs when necessary to eliminate '.' in names ######
 
