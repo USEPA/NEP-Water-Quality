@@ -653,31 +653,16 @@ for (i in 1:nrow(morro_biofoul_processed)) {
     )
 }
 
-#### Tillamook: if needed ####
-# renaming pco2.ppm to co2.ppm  
-if ('pco2.ppm' %in% names(qa_data_list_revision$Tillamook)) {
-  qa_data_list_revision$Tillamook = qa_data_list_revision$Tillamook %>% 
-    rename(co2.ppm = pco2.ppm)
-}
-if ('pco2.ppm' %in% names(pass_data_list_revision$Tillamook)) {
-  pass_data_list_revision$Tillamook = pass_data_list_revision$Tillamook %>% 
-    rename(co2.ppm = pco2.ppm)
-}
-# create sensor.SAMICO2 column if it doesn't already exist
-if (!'sensor.SAMICO2' %in% colnames(qa_data_list_revision$Tillamook)) {
-  qa_data_list_revision$Tillamook = qa_data_list_revision$Tillamook %>% 
-    mutate(sensor.SAMICO2 = case_when(
-      !is.na(pco2_uatm) ~ 1, 
-      TRUE ~ 0
-      ))
-}
-if (!'sensor.SAMICO2' %in% colnames(pass_data_list_revision$Tillamook)) {
-  pass_data_list_revision$Tillamook = pass_data_list_revision$Tillamook %>% 
-    mutate(sensor.SAMICO2 = case_when(
-      !is.na(pco2_uatm) ~ 1, 
-      TRUE ~ 0
-    ))
-}
+#### Tillamook:  ####
+## [Moved by Andrew on 12/12/2025 to section below: 'Additional Edits by Andrew, Dec 11-12 2025']
+
+#
+
+
+#
+
+
+#
 
 
 ####  San Francisco Salinity Issue: continued from lines ~334-335 ####
@@ -690,15 +675,107 @@ if (!'sensor.SAMICO2' %in% colnames(pass_data_list_revision$Tillamook)) {
 ###########    Additional Edits by Andrew, Dec 11-12 2025     #################
 ###############################################################################
 
+####### Update column names for all NEPs when necessary to eliminate '.' in names, for easier use across R/Python/Matlab ######
+colnames(qa_data_list_revision$Barnegat) = gsub('.','_',colnames(qa_data_list_revision$Barnegat), fixed=TRUE)
+colnames(pass_data_list_revision$Barnegat) = gsub('.','_',colnames(pass_data_list_revision$Barnegat), fixed=TRUE)
+colnames(qa_data_list_revision$Cascobay) = gsub('.','_',colnames(qa_data_list_revision$Cascobay), fixed=TRUE)
+colnames(pass_data_list_revision$Cascobay) = gsub('.','_',colnames(pass_data_list_revision$Cascobay), fixed=TRUE)
+colnames(qa_data_list_revision$Coastalbend) = gsub('.','_',colnames(qa_data_list_revision$Coastalbend), fixed=TRUE)
+colnames(pass_data_list_revision$Coastalbend) = gsub('.','_',colnames(pass_data_list_revision$Coastalbend), fixed=TRUE)
+colnames(qa_data_list_revision$DelawareInland) = gsub('.','_',colnames(qa_data_list_revision$DelawareInland), fixed=TRUE)
+colnames(pass_data_list_revision$DelawareInland) = gsub('.','_',colnames(pass_data_list_revision$DelawareInland), fixed=TRUE)
+colnames(qa_data_list_revision$IndianRiverLagoon) = gsub('.','_',colnames(qa_data_list_revision$IndianRiverLagoon), fixed=TRUE)
+colnames(pass_data_list_revision$IndianRiverLagoon) = gsub('.','_',colnames(pass_data_list_revision$IndianRiverLagoon), fixed=TRUE)
+colnames(qa_data_list_revision$LongIslandSound) = gsub('.','_',colnames(qa_data_list_revision$LongIslandSound), fixed=TRUE)
+colnames(pass_data_list_revision$LongIslandSound) = gsub('.','_',colnames(pass_data_list_revision$LongIslandSound), fixed=TRUE)
+colnames(qa_data_list_revision$Mobile) = gsub('.','_',colnames(qa_data_list_revision$Mobile), fixed=TRUE)
+colnames(pass_data_list_revision$Mobile) = gsub('.','_',colnames(pass_data_list_revision$Mobile), fixed=TRUE)
+colnames(qa_data_list_revision$Morro) = gsub('.','_',colnames(qa_data_list_revision$Morro), fixed=TRUE)
+colnames(pass_data_list_revision$Morro) = gsub('.','_',colnames(pass_data_list_revision$Morro), fixed=TRUE)
+colnames(qa_data_list_revision$Narragansett) = gsub('.','_',colnames(qa_data_list_revision$Narragansett), fixed=TRUE)
+colnames(pass_data_list_revision$Narragansett) = gsub('.','_',colnames(pass_data_list_revision$Narragansett), fixed=TRUE)
+colnames(qa_data_list_revision$NYNJH) = gsub('.','_',colnames(qa_data_list_revision$NYNJH), fixed=TRUE)
+colnames(pass_data_list_revision$NYNJH) = gsub('.','_',colnames(pass_data_list_revision$NYNJH), fixed=TRUE)
+colnames(qa_data_list_revision$Pensacola) = gsub('.','_',colnames(qa_data_list_revision$Pensacola), fixed=TRUE)
+colnames(pass_data_list_revision$Pensacola) = gsub('.','_',colnames(pass_data_list_revision$Pensacola), fixed=TRUE)
+colnames(qa_data_list_revision$PugetSound) = gsub('.','_',colnames(qa_data_list_revision$PugetSound), fixed=TRUE)
+colnames(pass_data_list_revision$PugetSound) = gsub('.','_',colnames(pass_data_list_revision$PugetSound), fixed=TRUE)
+colnames(qa_data_list_revision$SanFrancisco) = gsub('.','_',colnames(qa_data_list_revision$SanFrancisco), fixed=TRUE)
+colnames(pass_data_list_revision$SanFrancisco) = gsub('.','_',colnames(pass_data_list_revision$SanFrancisco), fixed=TRUE)
+colnames(qa_data_list_revision$Tampa) = gsub('.','_',colnames(qa_data_list_revision$Tampa), fixed=TRUE)
+colnames(pass_data_list_revision$Tampa) = gsub('.','_',colnames(pass_data_list_revision$Tampa), fixed=TRUE)
+colnames(qa_data_list_revision$Tillamook) = gsub('.','_',colnames(qa_data_list_revision$Tillamook), fixed=TRUE)
+colnames(pass_data_list_revision$Tillamook) = gsub('.','_',colnames(pass_data_list_revision$Tillamook), fixed=TRUE)
+
+
+#########################   Cleaning up Tillamook:     ########################
+
+### Adding descriptive data:
+## Create sensor columns in qa_data_list_revision:
+# create sensor.SAMICO2 column if it doesn't already exist
+if (!'sensor_SAMICO2' %in% colnames(qa_data_list_revision$Tillamook)) {
+  qa_data_list_revision$Tillamook = qa_data_list_revision$Tillamook %>% 
+    mutate(sensor_SAMICO2 = case_when(
+      !is.na(pco2_uatm) ~ 1, 
+      TRUE ~ 0
+    ))
+}
+# create sensor.SeaFET column
+if(!'sensor_SeaFET' %in% colnames(qa_data_list_revision$Tillamook)) {
+  qa_data_list_revision$Tillamook$sensor_SeaFET = case_when(
+    !is.na(qa_data_list_revision$Tillamook$temp_c_seafet) ~ 1,
+    TRUE ~ 0
+  ) 
+}
+# create sensor.SeapHOx column
+if(!'sensor_SeapHOx' %in% colnames(qa_data_list_revision$Tillamook)) {
+  qa_data_list_revision$Tillamook$sensor_SeapHOx = case_when(
+    !is.na(qa_data_list_revision$Tillamook$temp_c_seaphox) ~ 1,
+    TRUE ~ 0
+  ) 
+}
+# create sensor.YSI column
+if(!'sensor_YSI' %in% colnames(qa_data_list_revision$Tillamook)) {
+  qa_data_list_revision$Tillamook$sensor_YSI = case_when(
+    !is.na(qa_data_list_revision$Tillamook$temp_c_ysi) ~ 1,
+    TRUE ~ 0
+  ) 
+}
+### Create sensor columns in pass_data_list_revision:
+if (!'sensor_SAMICO2' %in% colnames(pass_data_list_revision$Tillamook)) {
+  pass_data_list_revision$Tillamook = pass_data_list_revision$Tillamook %>% 
+    mutate(sensor_SAMICO2 = case_when(
+      !is.na(pco2_uatm) ~ 1, 
+      TRUE ~ 0
+    ))
+}
+if(!'sensor_SeaFET' %in% colnames(pass_data_list_revision$Tillamook)) {
+  pass_data_list_revision$Tillamook$sensor_SeaFET = case_when(
+    !is.na(pass_data_list_revision$Tillamook$temp_c_seafet) ~ 1,
+    TRUE ~ 0
+  ) 
+}
+if(!'sensor_SeapHOx' %in% colnames(pass_data_list_revision$Tillamook)) {
+  pass_data_list_revision$Tillamook$sensor_SeapHOx = case_when(
+    !is.na(pass_data_list_revision$Tillamook$temp_c_seaphox) ~ 1,
+    TRUE ~ 0
+  ) 
+}
+if(!'sensor_YSI' %in% colnames(pass_data_list_revision$Tillamook)) {
+  pass_data_list_revision$Tillamook$sensor_YSI = case_when(
+    !is.na(pass_data_list_revision$Tillamook$temp_c_ysi) ~ 1,
+    TRUE ~ 0
+  ) 
+}
 
 
 
-####### Update column names for all NEPs when necessary to eliminate '.' in names ######
+
 
 
 
 ##### Add in any columns to the Tillamook data that are now missing in qa_data_list_revision$Tillamook and pass_data_list_revision$Tillamook ######
-# Make a new column to convert PST timestamp to UTC (R thinks timestamp_pst is in UTC)
+
 
 
 ## save revised qa_data and pass_data #########################################
@@ -708,4 +785,3 @@ save(pass_data_list_revision,file="O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification
 
 # save(qa_data_list_revision,file="C:/Users/spacella/OneDrive - Environmental Protection Agency (EPA)/NEP OA standards analysis/qa_data_list_revision.Rdata")
 # save(pass_data_list_revision,file="C:/Users/spacella/OneDrive - Environmental Protection Agency (EPA)/NEP OA standards analysis/pass_data_list_revision.Rdata")
-
