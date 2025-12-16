@@ -1,7 +1,7 @@
 # Stephen R. Pacella
 # EPA Office of Research and Development, Pacific Coastal Ecology Branch, Newport, OR
 # Originally created: June 25, 2025
-# Last updated: Dec 12, 2025
+# Last updated: Dec 16, 2025
 # Edits by Andrew Mandovi (ORISE) denoted by 'AWM' initials
 
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -28,7 +28,6 @@ library(writexl) #Write Excel files to txt, etc
 library(lmodel2) #Model II linear regression
 library(stringr) #Easier manipulation of with character strings
 library(janitor) #Misc cleaning tools
-library(dplyr) #Pipping tools
 library(readr) #Read tables
 library(svDialogs) # Dialogue box
 library(ggpubr) #Arrange ggplots
@@ -47,6 +46,7 @@ library(dataCompareR)
 data_path = 'O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/4. Finalized Data from NEPs/'
 load(paste0(data_path,'qa_data_list.Rdata'))
 Odrive_data_path = 'O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/'
+
 
 ##### Barnegat Bay ###############################################
 
@@ -123,19 +123,19 @@ qa_data_list$DelawareInland$flags_revision <- qa_data_list$DelawareInland$flags
 
 qa_data_list$IndianRiverLagoon$flags_revision <- qa_data_list$IndianRiverLagoon$flags
 
-## testing:
-irl_limit = qa_data_list_revision$IndianRiverLagoon[qa_data_list_revision$IndianRiverLagoon$co2.ppm < 10000]
-# plot(irl_limit$datetime.utc,irl_limit$co2.ppm)
-
-irl_filter = qa_data_list_revision$IndianRiverLagoon %>% 
-  filter(co2.ppm < 10,000 & datetime.utc > irl_cutoff)
-
-# plotting IRL data with filtered "cap" on co2 data
-# ggplot(irl_filter, aes(datetime.utc,co2.ppm,color = flags))+
-#   geom_point()+
-#   ylim(c(0,10000))
-
-## /testing
+# ## testing:
+# irl_limit = qa_data_list_revision$IndianRiverLagoon[qa_data_list_revision$IndianRiverLagoon$co2.ppm < 10000]
+# # plot(irl_limit$datetime.utc,irl_limit$co2.ppm)
+# 
+# irl_filter = qa_data_list_revision$IndianRiverLagoon %>% 
+#   filter(co2.ppm < 10,000 & datetime.utc > cutoff_date)
+# 
+# # plotting IRL data with filtered "cap" on co2 data
+# # ggplot(irl_filter, aes(datetime.utc,co2.ppm,color = flags))+
+# #   geom_point()+
+# #   ylim(c(0,10000))
+# 
+# ## /testing
 
 #Comment: co2.ppm values flagged as good
 #Revision: no change needed
@@ -399,11 +399,11 @@ qa_data_list$PugetSound$flags_revision <- qa_data_list$PugetSound$flags
 ## Create new dataframe with "pass" data only based on flags_revision column ###
 ################################################################################
 
-
 pass_data_list_revision <- list()
 
 # Create new qa_data_list based on revisions
 qa_data_list_revision <- qa_data_list
+
 
 ## Create cutoff date to filter data_list with, for 2015-present
 cutoff_date = as.POSIXct('2014-12-31 23:59:59',format='%Y-%m-%d %H:%M:%S', tz='UTC')
@@ -653,16 +653,7 @@ for (i in 1:nrow(morro_biofoul_processed)) {
     )
 }
 
-#### Tillamook:  ####
-## [Moved by Andrew on 12/12/2025 to section below: 'Additional Edits by Andrew, Dec 11-12 2025']
 
-#
-
-
-#
-
-
-#
 
 
 ####  San Francisco Salinity Issue: continued from lines ~334-335 ####
@@ -672,7 +663,7 @@ for (i in 1:nrow(morro_biofoul_processed)) {
 
 
 ###############################################################################
-###########    Additional Edits by Andrew, Dec 11-12 2025     #################
+###########    Additional Edits by Andrew, Dec 11-16 2025     #################
 ###############################################################################
 
 ####### Update column names for all NEPs when necessary to eliminate '.' in names, for easier use across R/Python/Matlab ######
@@ -772,10 +763,89 @@ if(!'sensor_YSI' %in% colnames(pass_data_list_revision$Tillamook)) {
 
 
 
-
-
 ##### Add in any columns to the Tillamook data that are now missing in qa_data_list_revision$Tillamook and pass_data_list_revision$Tillamook ######
+# function to determine season
+get_season = function(date) {
+  month = month(date)
+  if (month %in% c(12, 1, 2)) {
+    return('DJF')
+  } else if (month %in% c(3,4,5)) {
+    return('MAM')
+  } else if (month %in% c(6,7,8)) {
+    return('JJA')
+  } else if (month %in% c(9,10,11)) {
+    return('SON')
+  }
+}
 
+qa_data_list_revision$Tillamook = qa_data_list_revision$Tillamook %>% 
+  mutate(
+    NEP = 'Tillamook Bay',
+    station_name = 'Garibaldi Dock',
+    site_code = 'GD',
+    season = sapply(datetime_utc,get_season),
+    # Create overall measurement columns based on which, if any, sensors performed measurements:
+    ph_T = case_when(
+      !is.na(ph_ext_seaphox) ~ ph_ext_seaphox, # pH priority 1: SeapHOx
+      !is.na(ph_ext_seafet) ~ ph_ext_seafet,  # pH priority 2: SeaFET
+      !is.na(ph_ysi) & !is.na(sal_ppt_ysi) ~ ph_ysi + (sal_ppt_ysi * 0.016 / 35), # pH priority 3: YSI, converted to Total pH
+      TRUE ~ NA_real_ # if all NA or no salinity to pair with YSI, then set to NA)
+    ),
+    sal_ppt = case_when(
+      !is.na(sal_ppt_seaphox) ~ sal_ppt_seaphox,
+      !is.na(sal_ppt_ysi) ~ sal_ppt_ysi,
+      TRUE ~ NA_real_
+    ),
+    temp_c = case_when(
+      !is.na(temp_c_seaphox) ~ temp_c_seaphox,
+      !is.na(temp_c_ysi) ~ temp_c_ysi,
+      TRUE ~ NA_real_
+    ),
+    depth_m = case_when(
+      !is.na(depth_m_seaphox) ~ depth_m_seaphox,
+      !is.na(depth_m_ysi) ~ depth_m_ysi,
+      TRUE ~ NA_real_
+    ),
+    do_mgl = case_when(
+      !is.na(do_mgl_seaphox) ~ do_mgl_seaphox,
+      !is.na(do_mgl_ysi) ~ do_mgl_ysi,
+      TRUE ~ NA_real_
+    )
+  )
+pass_data_list_revision$Tillamook = pass_data_list_revision$Tillamook %>% 
+  mutate(
+    NEP = 'Tillamook Bay',
+    station_name = 'Garibaldi Dock',
+    site_code = 'GD',
+    season = sapply(datetime_utc,get_season),
+    # Create overall measurement columns based on which, if any, sensors performed measurements:
+    ph_T = case_when(
+      !is.na(ph_ext_seaphox) ~ ph_ext_seaphox, # pH priority 1: SeapHOx
+      !is.na(ph_ext_seafet) ~ ph_ext_seafet,  # pH priority 2: SeaFET
+      !is.na(ph_ysi) & !is.na(sal_ppt_ysi) ~ ph_ysi + (sal_ppt_ysi * 0.016 / 35), # pH priority 3: YSI, converted to Total pH
+      TRUE ~ NA_real_ # if all NA or no salinity to pair with YSI, then set to NA)
+    ),
+    sal_ppt = case_when(
+      !is.na(sal_ppt_seaphox) ~ sal_ppt_seaphox,
+      !is.na(sal_ppt_ysi) ~ sal_ppt_ysi,
+      TRUE ~ NA_real_
+    ),
+    temp_c = case_when(
+      !is.na(temp_c_seaphox) ~ temp_c_seaphox,
+      !is.na(temp_c_ysi) ~ temp_c_ysi,
+      TRUE ~ NA_real_
+    ),
+    depth_m = case_when(
+      !is.na(depth_m_seaphox) ~ depth_m_seaphox,
+      !is.na(depth_m_ysi) ~ depth_m_ysi,
+      TRUE ~ NA_real_
+    ),
+    do_mgl = case_when(
+      !is.na(do_mgl_seaphox) ~ do_mgl_seaphox,
+      !is.na(do_mgl_ysi) ~ do_mgl_ysi,
+      TRUE ~ NA_real_
+    )
+  )
 
 
 ## save revised qa_data and pass_data #########################################
