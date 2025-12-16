@@ -787,6 +787,7 @@ qa_data_list_revision$Tillamook = qa_data_list_revision$Tillamook %>%
     station_name = 'Garibaldi Dock',
     site_code = 'GD',
     season = sapply(datetime_utc,get_season),
+    region = 'Pacific',
     # Create overall measurement columns based on which, if any, sensors performed measurements:
     ph_T = case_when(
       !is.na(ph_ext_seaphox) ~ ph_ext_seaphox, # pH priority 1: SeapHOx
@@ -821,6 +822,7 @@ pass_data_list_revision$Tillamook = pass_data_list_revision$Tillamook %>%
     station_name = 'Garibaldi Dock',
     site_code = 'GD',
     season = sapply(datetime_utc,get_season),
+    region = 'Pacific',
     # Create overall measurement columns based on which, if any, sensors performed measurements:
     ph_T = case_when(
       !is.na(ph_ext_seaphox) ~ ph_ext_seaphox, # pH priority 1: SeapHOx
@@ -851,10 +853,15 @@ pass_data_list_revision$Tillamook = pass_data_list_revision$Tillamook %>%
   )
 
 
-## save revised qa_data and pass_data #########################################
+## RENAME revised qa_data_list_revision and pass_data_list_revision #########################################
+
+nep_unfiltered_data = qa_data_list_revision # qa_data_list_revision is now nep_unfiltered_data
+nep_filtered_data = pass_data_list_revision # pass_data_list_revision is now nep_filtered_data
+
 ################################################################################
-save(qa_data_list_revision,file="O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/qa_data_list_revision.Rdata")
-save(pass_data_list_revision,file="O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/pass_data_list_revision.Rdata")
+# # # # Save Data: # # # #
+save(nep_unfiltered_data,file="O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_unfiltered_data.Rdata")
+save(nep_filtered_data,file="O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_filtered_data.Rdata")
 
 # save(qa_data_list_revision,file="C:/Users/spacella/OneDrive - Environmental Protection Agency (EPA)/NEP OA standards analysis/qa_data_list_revision.Rdata")
 # save(pass_data_list_revision,file="C:/Users/spacella/OneDrive - Environmental Protection Agency (EPA)/NEP OA standards analysis/pass_data_list_revision.Rdata")
