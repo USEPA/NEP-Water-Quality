@@ -332,7 +332,10 @@ qa_data_list$SanFrancisco$flags_revision <- qa_data_list$SanFrancisco$flags
 #Comment: ph.tot.qc displays 4 (fail) when ph values = ~
 #Revision: no change needed
 #Comment: sal.ppt.qc displays 1 (pass) when sal values > 40, these salinity values are unlikely at site: CARQ, 38.0657 -122.2302
-#Revision: NEED TO COME BACK TO !!! [!~! was this addressed?] --> continued around line ~683
+#Revision: Identified period of questionable salinity values and flagging this period as suspect (2)
+int_test <- interval(ymd_hms("2022-12-01 00:00:00 UTC"), ymd_hms("2022-12-30 00:00:00 UTC")) #period of questionable salinity
+bad_test <- which(qa_data_list$SanFrancisco$datetime.utc %within% int_test) #Find rows which fall within this time interval 
+qa_data_list$SanFrancisco$flags_revision[bad_test] <- 2 #Flag data as suspect
 
 
 ##### Tampa ###############################################
@@ -855,3 +858,4 @@ save(pass_data_list_revision,file="O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification
 
 # save(qa_data_list_revision,file="C:/Users/spacella/OneDrive - Environmental Protection Agency (EPA)/NEP OA standards analysis/qa_data_list_revision.Rdata")
 # save(pass_data_list_revision,file="C:/Users/spacella/OneDrive - Environmental Protection Agency (EPA)/NEP OA standards analysis/pass_data_list_revision.Rdata")
+
