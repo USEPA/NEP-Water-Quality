@@ -157,7 +157,7 @@ qa_data_list$Morro = data_list$Morro %>%
 
 pass_data_list$Morro = qa_data_list$Morro |> 
   arrange(datetime.utc) |> 
-  filter(site.code == 'BM1') |> # filtering out site BS1
+  # filter(site.code == 'BM1') |> # (No longer filtering out site BS1)
   filter(datetime.utc > cutoff_date & flags == 1)
 
 # Narragansett Bay
@@ -347,3 +347,4 @@ pass_data_list$Pensacola = pass_data_list$Pensacola %>%
   mutate(region = 'Gulf')
 pass_data_list$Tampa = pass_data_list$Tampa %>% 
   mutate(region = 'Gulf')
+
