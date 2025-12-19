@@ -1,5 +1,3 @@
-# INSTRUCTIONS
-
 This entire Repository has been cloned from amandovi/NEP-QA-WQ to USEPA/NEP-Water-Quality as of January 17, 2025. If you do not have access to that repository, please email Steve Pacella (pacella.stephen@epa.gov) or Andrew Mandovi (mandovi.andrew@epa.gov). 
 
 The purpose of this repository is to store shared R code for working with data from National Estuary Program (NEP) monitoring sites to: 
@@ -8,11 +6,15 @@ I. QA/QC-ing raw data for analysis for the following NEPs (4): Barnegat Bay, Cas
 
 IIa. Creating a new version of the data_list (qa_data_list) which contains all QA flags performed in step I, and harmonizing all QA flags for all variables into a common 'flags' column. 
 
-IIb. Filtering qa_data_list based on the  
+IIb. Filtering qa_data_list based on flagging performed either internally or by the NEPs' respective staff. This filtered version of qa_data_list is named 'pass_data_list'. 
 
-III. (IN FUTURE) Performing analysis on the data 
+III. Performing final revisions on datasets (in NEP_revisions.R script) prior to publication of data to data.gov. These finalized datasets are renamed:
+qa_data_list_revision --> nep_unfiltered_data : The original data with all QA flagging
+pass_data_list_revision --> nep_filtered_data : the data filtered based on finalized QA metrics
 
-IV. (IN FUTURE) Creating visualizations of data for communication and publication of results
+IV. (IN FUTURE) Performing analysis on the data 
+
+V. (IN FUTURE) Creating visualizations of data for communication and publication of results
 
 --------------------------------------------------------------------------------------
 **I. QA/QC-ing raw data for analysis**, steps:
