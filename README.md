@@ -9,8 +9,8 @@ IIa. Creating a new version of the data_list (qa_data_list) which contains all Q
 IIb. Filtering qa_data_list based on flagging performed either internally or by the NEPs' respective staff. This filtered version of qa_data_list is named 'pass_data_list'. 
 
 III. Performing final revisions on datasets (in NEP_revisions.R script) prior to publication of data to data.gov. These finalized datasets are renamed:
-qa_data_list_revision --> nep_unfiltered_data : The original data with all QA flagging
-pass_data_list_revision --> nep_filtered_data : the data filtered based on finalized QA metrics
+- qa_data_list_revision --> nep_unfiltered_data : The original data with all QA flagging
+- pass_data_list_revision --> nep_filtered_data : the data filtered based on finalized QA metrics
 
 IV. (IN FUTURE) Performing analysis on the data 
 
