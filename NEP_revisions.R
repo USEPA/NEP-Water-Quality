@@ -141,11 +141,11 @@ qa_data_list$IndianRiverLagoon$flags_revision <- qa_data_list$IndianRiverLagoon$
 #Revision: no change needed
 
 #Comment: co2.ppm values >1,000,000 flagged as good
-#Revision: Flag co2.ppm values > 2,000 as suspect, NEED TO CONTACT IRL NEP !!! [AWM to SRP: was this resolved? !~!]
+#Revision: Flag co2.ppm values > 3,000 as suspect, verified with Kristen Davis 1/7/26
 # ---- AWM: 12.11.25 re-wrote the following section to use dplyr: ----
 qa_data_list$IndianRiverLagoon = qa_data_list$IndianRiverLagoon %>% 
   mutate(flags_revision = if_else(
-    co2.ppm > 2000 & flags == 1, # if co2 > 2000 ppm & flags == 1...
+    co2.ppm > 3000 & flags == 1, # if co2 > 3000 ppm & flags == 1...
     2,                           # then: make flags_revision = 2
     flags_revision               # else: keep the same
   )) %>% 
@@ -860,9 +860,13 @@ nep_filtered_data = pass_data_list_revision # pass_data_list_revision is now nep
 
 ################################################################################
 # # # # Save Data: # # # #
-save(nep_unfiltered_data,file="O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_unfiltered_data.Rdata")
-save(nep_filtered_data,file="O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_filtered_data.Rdata")
+timestamp <- format(Sys.time(), "%Y%m%d-%H%M%S")
+#save(nep_unfiltered_data,file="O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_unfiltered_data.Rdata")
+#save(nep_filtered_data,file="O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_filtered_data.Rdata")
+save(nep_unfiltered_data,file="O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_unfiltered_data_",timestamp,".Rdata")
+save(nep_filtered_data,file="O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_filtered_data_",timestamp,".Rdata")
 
 # save(qa_data_list_revision,file="C:/Users/spacella/OneDrive - Environmental Protection Agency (EPA)/NEP OA standards analysis/qa_data_list_revision.Rdata")
 # save(pass_data_list_revision,file="C:/Users/spacella/OneDrive - Environmental Protection Agency (EPA)/NEP OA standards analysis/pass_data_list_revision.Rdata")
+
 
