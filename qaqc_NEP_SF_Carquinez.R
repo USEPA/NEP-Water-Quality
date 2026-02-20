@@ -120,7 +120,8 @@ progress_print_option = readline(prompt='Would you like timestamped progress sta
 qa_sf_car = qaqc_nep(SF_car, vars_to_test, user_thresholds, sensor_thresholds, spike_thresholds, seasonal_thresholds, time_window,
                      time_interval=sample_interval, attenuated_signal_thresholds, num_sd_for_rate_of_change, num_flatline_sus, num_flatline_fail)
 
-### CREATE 'flags' column to take the maximum (worst) flag across the row:
+
+# Create 'flags_2026' column to take the maximum (worst) flag across the row:
 qa_sf_car = qa_sf_car %>%  
   mutate(flags_2026 = do.call(pmax, c(select(qa_sf_car, starts_with('test.')), na.rm=TRUE)))
 # And create individual flag columns for the tested variables
