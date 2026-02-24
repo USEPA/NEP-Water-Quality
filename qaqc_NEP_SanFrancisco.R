@@ -1,7 +1,7 @@
 # Andrew Mandovi
 # ORISE EPA - Office of Research and Development, Pacific Coastal Ecology Branch, Newport, OR
 # Originally created: Feb 13, 2026
-# Last updated: Feb 13, 2026
+# Last updated: Feb 23, 2026
 
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 # The purpose of this script is to 
@@ -43,6 +43,8 @@ SF_car = nep_unfiltered_data$SanFrancisco %>%
   filter(site.code == 'CMA')
 
 # (3) Run QAQC on the individual sites, separately
+progress_print_option = readline(prompt='Would you like timestamped progress statements in R Console through the process for troubleshooting? (y/n): ')
+
 source('qaqc_NEP_SF_Tiburon.R')
 cat('SF Bay - Tiburon QA process complete. \n')
 source('qaqc_NEP_SF_Carquinez.R')
@@ -64,8 +66,14 @@ sf_filtered = sf_recombined %>%
   filter(year(datetime_utc) > 2014,
          flags_2026 == 1)
 
-#####################################
-#    Data massaging #
+# filtering only for 2015-present data to align with other NEPs:
+sf_data = sf_recombined %>% filter(year(datetime_utc) > 2014)
+
+# ggplot(sf_data, aes(x=datetime_utc,  y=ph_T, color=as.factor(test_Flatline_ph_T)))+
+#   geom_scattermore(pixels=c(1000,1000),pointsize=3,alpha=1)+
+#   scale_color_manual(values = c("1" = "seagreen", "2" = "goldenrod", "3" = "firebrick1" ))+
+#   ylim(5,10)+
+#   theme(legend.position = 'none')
 
 
 
@@ -101,7 +109,18 @@ sf_filtered = sf_recombined %>%
 # ggplot(sf_filtered, aes(x=datetime_utc, y=ph_T, color=as.factor(flags_revision)))+
 #   geom_scattermore(pixels=c(1000,1000),pointsize=3,alpha=1)+
 #   scale_color_manual(values = c("1" = "seagreen", "2" = "goldenrod", "3" = "firebrick1" ))+
-#   theme(legend.position = c(0.85,0.1))
+# #   theme(legend.position = c(0.85,0.1))
+# 
+
+
+# qa_sf_test_2019 = qa_sf_tib_test %>% 
+#   filter(year(datetime.utc) == 2019 & month(datetime.utc) == 7)
+# 
+# p = ggplot(qa_sf_test_2019, aes(x=datetime.utc, y=ph.T, color=as.factor(test.Flatline_ph.T)))+
+#   geom_point()+
+#   scale_color_manual(values = c("1" = "seagreen", "2" = "goldenrod", "3" = "firebrick1" ))+
+#   theme(legend.position = 'none')
+# ggsave('SF_Tib_flatline_pH_hightol_long_threshold.png')
 # 
 # 
 # p = ggplot()+

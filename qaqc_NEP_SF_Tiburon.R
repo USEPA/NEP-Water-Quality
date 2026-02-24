@@ -2,7 +2,7 @@
 # Andrew Mandovi
 # ORISE EPA - Office of Research and Development, Pacific Coastal Ecology Branch, Newport, OR
 # Originally created: Feb 13, 2026
-# Last updated: Feb 13, 2026
+# Last updated: Feb 23, 2026
 
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 #                    INSTRUCTIONS FOR USER: 
@@ -16,9 +16,6 @@
 cat('Processing NEP: San Francisco Bay - Tiburon \n')
 
 ##### Step 3. PARAMETERIZATION: Edit these prior to running, customized for the specific NEP site/region: ####
-
-# DATE OF LAST UPDATE: 2/13/2026
-# Updated by: AM
 
 # For Gross-Range Test:
 ph_user_min = 6.5
@@ -71,8 +68,14 @@ num_sd_for_rate_of_change = 3
 min_num_pts_rate_of_change = 3
 sample_interval = 6 # minutes
 # For Flatline Test:
-num_flatline_sus = 15
-num_flatline_fail = 30
+num_flatline_sus = 60 # 6 hour
+num_flatline_fail = 120 # 12 hours
+flatline_thresholds = c(
+  'ph.T' = 0.01,
+  'temp.c' = 0.01,
+  'sal.ppt' = 0.001,
+  'do.mgl' = 0.005
+)
 # For Attenuated Signal Test:
 # these values dictate the exceedence thresholds to which the difference min(var) and max(var) over a given 12-hour period would FAIL or be SUSPECT if they do not exceed them 
 # similar to a flat-line test, it tests for near-flat-line scenarios, where a signal is overly dampened by an external factor
@@ -108,17 +111,16 @@ spike_thresholds = list(
 )
 # END PARAMETERIZATION #
 
-#### Step 2. Running QA script for Casco Bay: ####
+#### Step 2. Running QA script for Tiburon: ####
 
-# Casco - do you have thresholds for Casco entered?
 vars_to_test = c('ph.T','temp.c','sal.ppt','do.mgl')
 
+# testing:
+qa_sf_tib_test = flatline_test(SF_tib, vars_to_test, num_flatline_sus, num_flatline_fail, flatline_thresholds)
 
 # RUN SCRIPT: 
-progress_print_option = readline(prompt='Would you like timestamped progress statements in R Console through the process for troubleshooting? (y/n): ')
-
 qa_sf_tib = qaqc_nep(SF_tib, vars_to_test, user_thresholds, sensor_thresholds, spike_thresholds, seasonal_thresholds, time_window,
-                    time_interval=sample_interval, attenuated_signal_thresholds, num_sd_for_rate_of_change, num_flatline_sus, num_flatline_fail)
+                    time_interval=sample_interval, attenuated_signal_thresholds, num_sd_for_rate_of_change, num_flatline_sus, num_flatline_fail, flatline_thresholds)
 
 
 # Create 'flags_2026' column to take the maximum (worst) flag across the row:

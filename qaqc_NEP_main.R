@@ -1,7 +1,7 @@
 # Andrew Mandovi
 # ORISE EPA - Office of Research and Development, Pacific Coastal Ecology Branch, Newport, OR
 # Originally created: Jan 23, 2025
-# Last updated: Apr 10, 2025
+# Last updated: Feb 23, 2026
 
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 #                    This R script performs the following: 
@@ -93,20 +93,21 @@ spike_test = function(site_data, vars_to_test, spike_thresholds) {
     # mutate(test.Spike = prioritize_values_vectorized(site_data, 'test.Spike_'))
   return(data)
 }
+
 # FLATLINE TEST #
-get_flatline_lengths = function(x) {
-  # function which looks at a list of values and returns a list of how many times each value has been repeated
-  # e.g. if x = c(1,2,2,5,5,5) this would return: c(1,1,2,1,2,3)
+get_flatline_lengths = function(x, tol) {
+  # Returns how many times consecutive values have stayed within the 'tol' range.
   n = length(x)
-  flatline_lengths = rep(1,n) # create a list of 1's, equal in length to the list 'x'
+  flatline_lengths = rep(1, n) # create list of 1's, equal in length to list 'x'
   for (i in 2:n) {
-    if (!is.na(x[i]) && !is.na(x[i-1]) && x[i] == x[i-1]) { # if the value is equal to the previous value: add 1 to the i'th flatline tracker
-      flatline_lengths[i] = flatline_lengths[i-1]+1
+    # Check if the absolute difference is within the specific tolerance for this variable
+    if (!is.na(x[i]) && !is.na(x[i-1]) && abs(x[i] - x[i-1]) <= tol) { 
+      flatline_lengths[i] = flatline_lengths[i-1] + 1
     }
   }
   return(flatline_lengths)
 }
-flatline_test = function(site_data, vars_to_test, num_flatline_sus, num_flatline_fail) {
+flatline_test = function(site_data, vars_to_test, num_flatline_sus, num_flatline_fail, flatline_thresholds) {
   # Tests NEP data for consecutive unchanging values
   #  0 - Test not ran
   #  0.5 - Insufficient data (not enough previous entries)
@@ -120,11 +121,15 @@ flatline_test = function(site_data, vars_to_test, num_flatline_sus, num_flatline
     mutate(across(all_of(vars_to_test), ~ 0, .names = 'test.Flatline_{.col}'))
   # Apply test logic:
   for (var in vars_to_test) {
-    if (tolower(progress_print_option) %in% c('y','yes')) {
-      print(paste('Processing flatline for:',var,'at',Sys.time()))
+    # DIRECT MATCHING: Extract threshold specifically assigned to this 'var'
+    current_tol = flatline_thresholds[[var]]
+    if (exists("progress_print_option") && tolower(progress_print_option) %in% c('y','yes')) {
+      print(paste('Processing flatline for:', var, '| Threshold:', current_tol, '| at', Sys.time()))
     }
+    
     col = data[[var]]
-    flatline_lengths = get_flatline_lengths(col)
+    flatline_lengths = get_flatline_lengths(col, current_tol)
+    
     flag_col = case_when(
       row_number(data) < 5 ~ 0.5, # INSUFFICIENT DATA
       is.na(col) ~ 0,                   # TEST NOT RAN
@@ -139,6 +144,55 @@ flatline_test = function(site_data, vars_to_test, num_flatline_sus, num_flatline
     mutate(test.Flatline = do.call(pmax, c(select(data, starts_with('test.Flatline_')), na.rm=TRUE)))
   return(data)
 }
+
+
+# # OLD FLATLINE TEST #
+# get_flatline_lengths = function(x) {
+#   # function which looks at a list of values and returns a list of how many times each value has been repeated
+#   # e.g. if x = c(1,2,2,5,5,5) this would return: c(1,1,2,1,2,3)
+#   n = length(x)
+#   flatline_lengths = rep(1,n) # create a list of 1's, equal in length to the list 'x'
+#   for (i in 2:n) {
+#     if (!is.na(x[i]) && !is.na(x[i-1]) && x[i] == x[i-1]) { # if the value is equal to the previous value: add 1 to the i'th flatline tracker 
+#       flatline_lengths[i] = flatline_lengths[i-1]+1
+#     }
+#   }
+#   return(flatline_lengths)
+# }
+# flatline_test = function(site_data, vars_to_test, num_flatline_sus, num_flatline_fail, flatline_threshold) {
+#   # Tests NEP data for consecutive unchanging values
+#   #  0 - Test not ran
+#   #  0.5 - Insufficient data (not enough previous entries)
+#   #  1 - Pass
+#   #  2 - Suspect - 3 or 4 equal repeated values
+#   #  3 - Fail - 5+ equal repeated values 
+#   # - - - - - - - - - - - - - - - - - -
+#   SUS_NUM = num_flatline_sus 
+#   FAIL_NUM = num_flatline_fail 
+#   data = site_data |> 
+#     mutate(across(all_of(vars_to_test), ~ 0, .names = 'test.Flatline_{.col}'))
+#   # Apply test logic:
+#   for (var in vars_to_test) {
+#     if (tolower(progress_print_option) %in% c('y','yes')) {
+#       print(paste('Processing flatline for:',var,'at',Sys.time()))
+#     }
+#     col = data[[var]]
+#     flatline_lengths = get_flatline_lengths(col)
+#     flag_col = case_when(
+#       row_number(data) < 5 ~ 0.5, # INSUFFICIENT DATA
+#       is.na(col) ~ 0,                   # TEST NOT RAN
+#       flatline_lengths >= FAIL_NUM ~ 3, # FAIL
+#       flatline_lengths >= SUS_NUM ~ 2, # SUSPECT
+#       TRUE ~ 1                         # PASS
+#     )
+#     data[[paste0('test.Flatline_',var)]] = flag_col
+#   }
+#   # create overall test.Flatline column
+#   data = data |> 
+#     mutate(test.Flatline = do.call(pmax, c(select(data, starts_with('test.Flatline_')), na.rm=TRUE)))
+#   return(data)
+# }
+
 # CLIMATOLOGY TEST #
 climatology_test = function(site_data, vars_to_test, seasonal_thresholds) {
   # Tests NEP data for seasonal-specific threshold exceedence
@@ -331,7 +385,7 @@ attenuated_signal_test = function(data, data_interp, vars_to_test, attenuated_si
 ### QAQC Function (calls individual test functions)####
 # _________________________________________________________ #
 qaqc_nep = function(data, columns_to_qa, user_thresholds, sensor_thresholds, spike_thresholds, seasonal_thresholds, time_window,
-                    time_interval, attenuated_signal_thresholds, num_sd_for_rate_change, num_flatline_sus, num_flatline_fail) {
+                    time_interval, attenuated_signal_thresholds, num_sd_for_rate_change, num_flatline_sus, num_flatline_fail, flatline_thresholds) {
 # METADATA: ####
 # Applies QARTOD testing across a single data-frame, assuming all data within the data-frame corresponds to a single NEP
 # Assumed column names:
@@ -368,7 +422,7 @@ qaqc_nep = function(data, columns_to_qa, user_thresholds, sensor_thresholds, spi
     # spike:
     site_data = spike_test(site_data, vars_to_test, spike_thresholds)
     # flat line:
-    site_data = flatline_test(site_data, vars_to_test, num_flatline_sus, num_flatline_fail)
+    site_data = flatline_test(site_data, vars_to_test, num_flatline_sus, num_flatline_fail, flatline_thresholds)
     # climatology:
     site_data = climatology_test(site_data, vars_to_test, seasonal_thresholds)
     # rate of change:
