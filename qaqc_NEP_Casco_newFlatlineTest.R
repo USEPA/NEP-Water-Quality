@@ -1,8 +1,7 @@
-
 # Andrew Mandovi
 # ORISE EPA - Office of Research and Development, Pacific Coastal Ecology Branch, Newport, OR
-# Originally created: Feb 13, 2026
-# Last updated: Feb 23, 2026
+# Originally created: Jan 23, 2025
+# Last updated: Jun 23, 2025
 
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 #                    INSTRUCTIONS FOR USER: 
@@ -13,39 +12,42 @@
 # 
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-cat('Processing NEP: San Francisco Bay - Carquinez \n')
+cat('Processing NEP: Casco Bay \n')
 
 ##### Step 3. PARAMETERIZATION: Edit these prior to running, customized for the specific NEP site/region: ####
 
+# DATE OF LAST UPDATE: ____ 
+# Updated by: ____ 
+
 # For Gross-Range Test:
-ph_user_min = 6.5
+ph_user_min = 6
 ph_user_max = 9
-temp_user_min = -2
-temp_user_max = 40
-sal_user_min = 0.025
-sal_user_max = 35
+temp_user_min = -1
+temp_user_max = 35
+sal_user_min = 0
+sal_user_max = 36
 co2_user_min = 100
 co2_user_max = 2500
-do_user_min = 0.01
-do_user_max = 20
+do_user_min = 0
+do_user_max = 15
 # sensor min/max's
 ph_sensor_min = 0
 ph_sensor_max = 14
-temp_sensor_min = -5
+temp_sensor_min = -10
 temp_sensor_max = 45
-sal_sensor_min = 0.002
-sal_sensor_max = 90
+sal_sensor_min = -1
+sal_sensor_max = 50
 co2_sensor_min = 0
 co2_sensor_max = 3500
 do_sensor_min = 0
-do_sensor_max = 50
+do_sensor_max = 25
 # for Spike Test:
-spike_low_ph = 0.25
-spike_high_ph = 0.5
-spike_low_temp = 1
-spike_high_temp = 2
-spike_low_sal = 5
-spike_high_sal = 10
+spike_low_ph = 1
+spike_high_ph = 2
+spike_low_temp = 3
+spike_high_temp = 5
+spike_low_sal = 10
+spike_high_sal = 20
 spike_low_do = 5
 spike_high_do = 10
 spike_low_co2 = 200
@@ -66,10 +68,11 @@ seasonal_thresholds = list(
 # For Rate-of-Change Test:
 num_sd_for_rate_of_change = 3 
 min_num_pts_rate_of_change = 3
-sample_interval = 6 # minutes
+sample_interval = 60 # minutes
 # For Flatline Test:
-num_flatline_sus = 60 # 6 hour
-num_flatline_fail = 120 # 12 hours
+# For Flatline Test:
+num_flatline_sus = 6 # 6 hours
+num_flatline_fail = 12 # 12 hours
 flatline_thresholds = c(
   'ph' = 0.0099,
   'temp.c' = 0.01,
@@ -111,24 +114,45 @@ spike_thresholds = list(
 )
 # END PARAMETERIZATION #
 
-#### Step 2. Running QA script for Carquinez: ####
+#### Step 2. Running QA script for Casco Bay: ####
+
+# Casco - do you have thresholds for Casco entered?
 vars_to_test = c('ph','temp.c','sal.ppt','do.mgl')
-
-
 # RUN SCRIPT: 
-qa_sf_car = qaqc_nep(SF_car, vars_to_test, user_thresholds, sensor_thresholds, spike_thresholds, seasonal_thresholds, time_window,
-                     time_interval=sample_interval, attenuated_signal_thresholds, num_sd_for_rate_of_change, num_flatline_sus, num_flatline_fail, flatline_thresholds)
+qa_casco = qaqc_nep(data_list$Cascobay, vars_to_test, user_thresholds, sensor_thresholds, spike_thresholds, seasonal_thresholds, time_window,
+                    time_interval=sample_interval, attenuated_signal_thresholds, num_sd_for_rate_of_change, num_flatline_sus, num_flatline_fail,flatline_thresholds)
 
+### CREATE 'flags' column to take the maximum (worst) flag across the row:
+qa_casco = qa_casco |> 
+  mutate(flags = do.call(pmax, c(select(qa_casco, starts_with('test.')), na.rm=TRUE)))
 
-# Create 'flags_2026' column to take the maximum (worst) flag across the row:
-qa_sf_car = qa_sf_car %>%  
-  mutate(flags_2026 = do.call(pmax, c(select(qa_sf_car, starts_with('test.')), na.rm=TRUE)))
-# And create individual flag columns for the tested variables
-qa_sf_car = qa_sf_car %>%  
-  mutate(ph_flag = do.call(pmax, c(select(qa_sf_car, ends_with('_ph')),na.rm=TRUE)),
-         do_flag = do.call(pmax, c(select(qa_sf_car, ends_with('_do.mgl')),na.rm=TRUE)),
-         temp_flag = do.call(pmax,c(select(qa_sf_car, ends_with('_temp.c')),na.rm=TRUE)),
-         sal_flag = do.call(pmax,c(select(qa_sf_car, ends_with('_sal.ppt')),na.rm=TRUE))
+qa_data_list$Cascobay = qa_casco
+qa_data_list$Cascobay = qa_data_list$Cascobay |> 
+  mutate(ph_flag = do.call(pmax, c(select(qa_data_list$Cascobay, ends_with('_ph')),na.rm=TRUE)),
+         do_flag = do.call(pmax, c(select(qa_data_list$Cascobay, ends_with('_do.mgl')),na.rm=TRUE)),
+         temp_flag = do.call(pmax,c(select(qa_data_list$Cascobay, ends_with('_temp.c')),na.rm=TRUE)),
+         sal_flag = do.call(pmax,c(select(qa_data_list$Cascobay, ends_with('_sal.ppt')),na.rm=TRUE))
   )
 #-------------
+
+#### Step 3: Saving Options ####
+
+if (interactive()) {
+  if (tolower(save_Odrive_option) %in% c('y','yes')) {
+    save_path = 'O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/4. Finalized Data from NEPs/qa_casco.Rdata'
+    cat('Saving qa_casco to:',save_path,'\n')
+    save(qa_casco, file=save_path)
+    cat('qa_casco saved successfully to O:drive \n')
+  } else {
+    cat('Skipped saving to O:drive. \n')
+  }
+  if (tolower(save_local_option) %in% c('y','yes')) {
+    save_path = getwd()
+    cat('Saving Casco data locally to current directory \n')
+    save(qa_casco, file = paste0(getwd(),'qa_casco.Rdata'))
+    cat('qa_casco saved locally. \n')
+  }
+} else {
+  cat('Skipped saving locally. \n')
+}
 

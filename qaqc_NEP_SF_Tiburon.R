@@ -71,7 +71,7 @@ sample_interval = 6 # minutes
 num_flatline_sus = 60 # 6 hour
 num_flatline_fail = 120 # 12 hours
 flatline_thresholds = c(
-  'ph.T' = 0.01,
+  'ph' = 0.0099,
   'temp.c' = 0.01,
   'sal.ppt' = 0.001,
   'do.mgl' = 0.005
@@ -80,7 +80,7 @@ flatline_thresholds = c(
 # these values dictate the exceedence thresholds to which the difference min(var) and max(var) over a given 12-hour period would FAIL or be SUSPECT if they do not exceed them 
 # similar to a flat-line test, it tests for near-flat-line scenarios, where a signal is overly dampened by an external factor
 attenuated_signal_thresholds = list(
-  ph.T = list(min_fail = 0.001, min_sus = 0.01),
+  ph = list(min_fail = 0.001, min_sus = 0.01),
   temp.c = list(min_fail = 0.01, min_sus = 0.1),
   sal.ppt = list(min_fail = 0.001, min_sus = 0.01),
   do.mgl = list(min_fail = 0.1, min_sus = 0.3),
@@ -89,21 +89,21 @@ attenuated_signal_thresholds = list(
 time_window = 24  # Time (in hours) to look back across to compare the signal against (default = 24-hours)
 # Threshold lists 
 user_thresholds = list(
-  ph.T = list(min=ph_user_min, max=ph_user_max),
+  ph = list(min=ph_user_min, max=ph_user_max),
   temp.c = list(min=temp_user_min, max=temp_user_max),
   sal.ppt = list(min=sal_user_min, max=sal_user_max),
   do.mgl = list(min=do_user_min, max=do_user_max),
   co2.ppm = list(min=co2_user_min, max=co2_user_max)
 )
 sensor_thresholds = list(
-  ph.T = list(min=ph_sensor_min, max=ph_sensor_max),
+  ph = list(min=ph_sensor_min, max=ph_sensor_max),
   temp.c = list(min=temp_sensor_min, max=temp_sensor_max),
   sal.ppt = list(min=sal_sensor_min, max=sal_sensor_max),
   do.mgl = list(min=do_sensor_min, max=do_sensor_max),
   co2.ppm = list(min=co2_sensor_min, max=co2_sensor_max)
 )
 spike_thresholds = list(
-  ph.T = list(low=spike_low_ph, high=spike_high_ph),
+  ph = list(low=spike_low_ph, high=spike_high_ph),
   temp.c = list(low=spike_low_temp, high=spike_high_temp),
   sal.ppt = list(low=spike_low_sal, high=spike_high_sal),
   do.mgl = list(low=spike_low_do, high=spike_high_do),
@@ -112,11 +112,8 @@ spike_thresholds = list(
 # END PARAMETERIZATION #
 
 #### Step 2. Running QA script for Tiburon: ####
+vars_to_test = c('ph','temp.c','sal.ppt','do.mgl')
 
-vars_to_test = c('ph.T','temp.c','sal.ppt','do.mgl')
-
-# testing:
-qa_sf_tib_test = flatline_test(SF_tib, vars_to_test, num_flatline_sus, num_flatline_fail, flatline_thresholds)
 
 # RUN SCRIPT: 
 qa_sf_tib = qaqc_nep(SF_tib, vars_to_test, user_thresholds, sensor_thresholds, spike_thresholds, seasonal_thresholds, time_window,
@@ -128,31 +125,10 @@ qa_sf_tib = qa_sf_tib %>%
   mutate(flags_2026 = do.call(pmax, c(select(qa_sf_tib, starts_with('test.')), na.rm=TRUE)))
 # And create individual flag columns for the tested variables
 qa_sf_tib = qa_sf_tib %>%  
-  mutate(ph_flag = do.call(pmax, c(select(qa_sf_tib, ends_with('_ph.T')),na.rm=TRUE)),
+  mutate(ph_flag = do.call(pmax, c(select(qa_sf_tib, ends_with('_ph')),na.rm=TRUE)),
          do_flag = do.call(pmax, c(select(qa_sf_tib, ends_with('_do.mgl')),na.rm=TRUE)),
          temp_flag = do.call(pmax,c(select(qa_sf_tib, ends_with('_temp.c')),na.rm=TRUE)),
          sal_flag = do.call(pmax,c(select(qa_sf_tib, ends_with('_sal.ppt')),na.rm=TRUE))
   )
 #-------------
-
-#### Step 3: Saving Options ####
-
-# if (interactive()) {
-#   if (tolower(save_Odrive_option) %in% c('y','yes')) {
-#     save_path = 'O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/qa_sf_tib.Rdata'
-#     cat('Saving qa_casco to:',save_path,'\n')
-#     save(qa_casco, file=save_path)
-#     cat('qa_casco saved successfully to O:drive \n')
-#   } else {
-#     cat('Skipped saving to O:drive. \n')
-#   }
-#   if (tolower(save_local_option) %in% c('y','yes')) {
-#     save_path = getwd()
-#     cat('Saving Casco data locally to current directory \n')
-#     save(qa_casco, file = paste0(getwd(),'qa_casco.Rdata'))
-#     cat('qa_casco saved locally. \n')
-#   }
-# } else {
-#   cat('Skipped saving locally. \n')
-# }
 

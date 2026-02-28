@@ -145,7 +145,6 @@ flatline_test = function(site_data, vars_to_test, num_flatline_sus, num_flatline
   return(data)
 }
 
-
 # # OLD FLATLINE TEST #
 # get_flatline_lengths = function(x) {
 #   # function which looks at a list of values and returns a list of how many times each value has been repeated
