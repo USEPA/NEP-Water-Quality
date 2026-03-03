@@ -70,8 +70,8 @@ num_sd_for_rate_of_change = 3
 min_num_pts_rate_of_change = 3
 sample_interval = 15 # minutes
 # For Flatline Test:
-num_flatline_sus = 24 # 6 hours
-num_flatline_fail = 48 # 12 hours
+num_flatline_sus = 48 # 12 hours
+num_flatline_fail = 96 # 24 hours
 flatline_thresholds = c(
   'ph' = 0.0099,
   'temp.c' = 0.01,
@@ -124,35 +124,40 @@ qa_barnegat = qaqc_nep(barnegat_filtered, vars_to_test, user_thresholds, sensor_
                        time_interval=sample_interval, attenuated_signal_thresholds, num_sd_for_rate_of_change, num_flatline_sus, num_flatline_fail, flatline_thresholds)
 
 ### CREATE 'flags' column to take the maximum (worst) flag across the row:
-qa_barnegat = qa_barnegat |> 
-  mutate(flags = do.call(pmax, c(select(qa_barnegat, starts_with('test.')), na.rm=TRUE)))
+qa_barnegat = qa_barnegat %>% 
+  mutate(flags = do.call(pmax, c(select(qa_barnegat, starts_with('test.')), na.rm=TRUE))) %>% 
+  mutate(ph_flag = do.call(pmax, c(select(qa_barnegat, ends_with('_ph')),na.rm=TRUE)),
+               do_flag = do.call(pmax, c(select(qa_barnegat, ends_with('_do.mgl')),na.rm=TRUE)),
+               temp_flag = do.call(pmax,c(select(qa_barnegat, ends_with('_temp.c')),na.rm=TRUE)),
+               sal_flag = do.call(pmax,c(select(qa_barnegat, ends_with('_sal.ppt')),na.rm=TRUE))
+         )
 
-qa_data_list$Barnegat = qa_barnegat
-qa_data_list$Barnegat = qa_data_list$Barnegat |> 
-  mutate(ph_flag = do.call(pmax, c(select(qa_data_list$Barnegat, ends_with('_ph')),na.rm=TRUE)),
-         do_flag = do.call(pmax, c(select(qa_data_list$Barnegat, ends_with('_do.mgl')),na.rm=TRUE)),
-         temp_flag = do.call(pmax,c(select(qa_data_list$Barnegat, ends_with('_temp.c')),na.rm=TRUE)),
-         sal_flag = do.call(pmax,c(select(qa_data_list$Barnegat, ends_with('_sal.ppt')),na.rm=TRUE))
-  ) 
+# qa_data_list$Barnegat = qa_barnegat
+# qa_data_list$Barnegat = qa_data_list$Barnegat |> 
+#   mutate(ph_flag = do.call(pmax, c(select(qa_data_list$Barnegat, ends_with('_ph')),na.rm=TRUE)),
+#          do_flag = do.call(pmax, c(select(qa_data_list$Barnegat, ends_with('_do.mgl')),na.rm=TRUE)),
+#          temp_flag = do.call(pmax,c(select(qa_data_list$Barnegat, ends_with('_temp.c')),na.rm=TRUE)),
+#          sal_flag = do.call(pmax,c(select(qa_data_list$Barnegat, ends_with('_sal.ppt')),na.rm=TRUE))
+#   ) 
 #---------
 
 #### Step 3: Saving Options ####
 
-if (interactive()) {
-  if (tolower(save_Odrive_option) %in% c('y','yes')) {
-    save_path = 'O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/4. Finalized Data from NEPs/qa_barnegat.Rdata'
-    cat('Saving qa_barnegat to:',save_path,'\n')
-    save(qa_barnegat, file=save_path)
-    cat('qa_barnegat saved successfully to O:drive. \n')
-  } else {
-    cat('Skipped saving to O:drive. \n')
-  }
-  if (tolower(save_local_option) %in% c('y','yes')) {
-    save_path = getwd()
-    cat('Saving Barnegat data locally to current directory \n')
-    save(qa_barnegat, file = paste0(getwd(),'qa_barnegat.Rdata'))
-    cat('qa_barnegat saved locally. \n')
-  }
-} else {
-  cat('Skipped saving locally. \n')
-}
+# if (interactive()) {
+#   if (tolower(save_Odrive_option) %in% c('y','yes')) {
+#     save_path = 'O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/4. Finalized Data from NEPs/qa_barnegat.Rdata'
+#     cat('Saving qa_barnegat to:',save_path,'\n')
+#     save(qa_barnegat, file=save_path)
+#     cat('qa_barnegat saved successfully to O:drive. \n')
+#   } else {
+#     cat('Skipped saving to O:drive. \n')
+#   }
+#   if (tolower(save_local_option) %in% c('y','yes')) {
+#     save_path = getwd()
+#     cat('Saving Barnegat data locally to current directory \n')
+#     save(qa_barnegat, file = paste0(getwd(),'qa_barnegat.Rdata'))
+#     cat('qa_barnegat saved locally. \n')
+#   }
+# } else {
+#   cat('Skipped saving locally. \n')
+# }

@@ -71,8 +71,8 @@ min_num_pts_rate_of_change = 3
 sample_interval = 10 # minutes
 # For Flatline Test:
 # For Flatline Test:
-num_flatline_sus = 36 # 6 hours
-num_flatline_fail = 72 # 12 hours
+num_flatline_sus = 72 # 12 hours
+num_flatline_fail = 144 # 24 hours
 flatline_thresholds = c(
   'ph' = 0.0099,
   'temp.c' = 0.01,
@@ -125,33 +125,38 @@ qa_pensacola = qaqc_nep(data_list$Pensacola, vars_to_test, user_thresholds, sens
 
 ### CREATE 'flags' column to take the maximum (worst) flag across the row:
 qa_pensacola = qa_pensacola |> 
-  mutate(flags = do.call(pmax, c(select(qa_pensacola, starts_with('test.')), na.rm=TRUE)))
-
-qa_data_list$Pensacola = qa_pensacola
-qa_data_list$Pensacola = qa_data_list$Pensacola |> 
-  mutate(ph_flag = do.call(pmax, c(select(qa_data_list$Pensacola, ends_with('_ph')),na.rm=TRUE)),
-         do_flag = do.call(pmax, c(select(qa_data_list$Pensacola, ends_with('_do.mgl')),na.rm=TRUE)),
-         temp_flag = do.call(pmax,c(select(qa_data_list$Pensacola, ends_with('_temp.c')),na.rm=TRUE)),
-         sal_flag = do.call(pmax,c(select(qa_data_list$Pensacola, ends_with('_sal.ppt')),na.rm=TRUE))
+  mutate(flags = do.call(pmax, c(select(qa_pensacola, starts_with('test.')), na.rm=TRUE))) %>% 
+  mutate(ph_flag = do.call(pmax, c(select(qa_pensacola, ends_with('_ph')),na.rm=TRUE)),
+         do_flag = do.call(pmax, c(select(qa_pensacola, ends_with('_do.mgl')),na.rm=TRUE)),
+         temp_flag = do.call(pmax,c(select(qa_pensacola, ends_with('_temp.c')),na.rm=TRUE)),
+         sal_flag = do.call(pmax,c(select(qa_pensacola, ends_with('_sal.ppt')),na.rm=TRUE))
   ) 
+# 
+# qa_data_list$Pensacola = qa_pensacola
+# qa_data_list$Pensacola = qa_data_list$Pensacola |> 
+#   mutate(ph_flag = do.call(pmax, c(select(qa_data_list$Pensacola, ends_with('_ph')),na.rm=TRUE)),
+#          do_flag = do.call(pmax, c(select(qa_data_list$Pensacola, ends_with('_do.mgl')),na.rm=TRUE)),
+#          temp_flag = do.call(pmax,c(select(qa_data_list$Pensacola, ends_with('_temp.c')),na.rm=TRUE)),
+#          sal_flag = do.call(pmax,c(select(qa_data_list$Pensacola, ends_with('_sal.ppt')),na.rm=TRUE))
+#   ) 
 #-------------
 
-### Step 3: Saving Options ####
-if (interactive()) {
-  if (tolower(save_Odrive_option) %in% c('y','yes')) {
-    save_path = 'O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/4. Finalized Data from NEPs/qa_pensacola.Rdata'
-    cat('Saving qa_pensacola to:',save_path,'\n')
-    save(qa_pensacola, file=save_path)
-    cat('qa_pensacola saved successfully to O:drive. \n')
-  } else {
-    cat('Skipped saving to O:drive. \n')
-  }
-  if (tolower(save_local_option) %in% c('y','yes')) {
-    save_path = getwd()
-    cat('Saving Pensacola data locally to current directory \n')
-    save(qa_pensacola, file = paste0(getwd(),'qa_pensacola.Rdata'))
-    cat('qa_pensacola saved locally. \n')
-  }
-} else {
-  cat('Skipped saving locally. \n')
-}
+# ### Step 3: Saving Options ####
+# if (interactive()) {
+#   if (tolower(save_Odrive_option) %in% c('y','yes')) {
+#     save_path = 'O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/4. Finalized Data from NEPs/qa_pensacola.Rdata'
+#     cat('Saving qa_pensacola to:',save_path,'\n')
+#     save(qa_pensacola, file=save_path)
+#     cat('qa_pensacola saved successfully to O:drive. \n')
+#   } else {
+#     cat('Skipped saving to O:drive. \n')
+#   }
+#   if (tolower(save_local_option) %in% c('y','yes')) {
+#     save_path = getwd()
+#     cat('Saving Pensacola data locally to current directory \n')
+#     save(qa_pensacola, file = paste0(getwd(),'qa_pensacola.Rdata'))
+#     cat('qa_pensacola saved locally. \n')
+#   }
+# } else {
+#   cat('Skipped saving locally. \n')
+# }

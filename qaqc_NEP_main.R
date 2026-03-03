@@ -94,58 +94,99 @@ spike_test = function(site_data, vars_to_test, spike_thresholds) {
   return(data)
 }
 
-# FLATLINE TEST #
-get_flatline_lengths = function(x, tol) {
-  # Returns how many times consecutive values have stayed within the 'tol' range.
-  n = length(x)
-  flatline_lengths = rep(1, n) # create list of 1's, equal in length to list 'x'
-  for (i in 2:n) {
-    # Check if the absolute difference is within the specific tolerance for this variable
-    if (!is.na(x[i]) && !is.na(x[i-1]) && abs(x[i] - x[i-1]) <= tol) { 
-      flatline_lengths[i] = flatline_lengths[i-1] + 1
-    }
-  }
-  return(flatline_lengths)
-}
+# NEW Flatline Test 2.0 ########
 flatline_test = function(site_data, vars_to_test, num_flatline_sus, num_flatline_fail, flatline_thresholds) {
   # Tests NEP data for consecutive unchanging values
   #  0 - Test not ran
-  #  0.5 - Insufficient data (not enough previous entries)
+  #  0.5 - Insufficient data
   #  1 - Pass
-  #  2 - Suspect - 3 or 4 equal repeated values
-  #  3 - Fail - 5+ equal repeated values 
-  # - - - - - - - - - - - - - - - - - -
+  #  2 - Suspect
+  #  3 - Fail
   SUS_NUM = num_flatline_sus 
   FAIL_NUM = num_flatline_fail 
-  data = site_data |> 
-    mutate(across(all_of(vars_to_test), ~ 0, .names = 'test.Flatline_{.col}'))
-  # Apply test logic:
+  data = site_data %>% 
+    mutate(global_row_idx = row_number())
   for (var in vars_to_test) {
-    # DIRECT MATCHING: Extract threshold specifically assigned to this 'var'
     current_tol = flatline_thresholds[[var]]
     if (exists("progress_print_option") && tolower(progress_print_option) %in% c('y','yes')) {
       print(paste('Processing flatline for:', var, '| Threshold:', current_tol, '| at', Sys.time()))
     }
-    
-    col = data[[var]]
-    flatline_lengths = get_flatline_lengths(col, current_tol)
-    
-    flag_col = case_when(
-      row_number(data) < 5 ~ 0.5, # INSUFFICIENT DATA
-      is.na(col) ~ 0,                   # TEST NOT RAN
-      flatline_lengths >= FAIL_NUM ~ 3, # FAIL
-      flatline_lengths >= SUS_NUM ~ 2, # SUSPECT
-      TRUE ~ 1                         # PASS
-    )
-    data[[paste0('test.Flatline_',var)]] = flag_col
+    # We create a temporary column to calculate the run lengths
+    # consecutive_id increments every time the value changes beyond the tolerance
+    data = data %>% 
+      mutate(
+        diff_val = c(0,abs(diff(.data[[var]]))),
+        is_break = if_else(diff_val > current_tol | is.na(diff_val), 1, 0),
+        run_id = cumsum(is_break)
+      ) %>% 
+      group_by(run_id) %>% 
+      mutate(
+        total_run_len = n(),
+        # apply flag logic to whole group
+        flag_val = case_when(
+          global_row_idx < 5 ~ 0.5, # insufficient data
+          is.na(.data[[var]]) ~ 0,
+          total_run_len >= FAIL_NUM ~ 3,
+          total_run_len >= SUS_NUM ~ 2,
+          TRUE ~ 1
+          )
+        ) %>% 
+      ungroup()
+    # assign to final column name
+    data[[paste0('test.Flatline_',var)]] = data$flag_val
+    # clean up temporary columns
+    data = data %>% select(-diff_val, -is_break, -run_id, -total_run_len, -flag_val, -global_row_idx)
   }
-  # create overall test.Flatline column
-  data = data |> 
-    mutate(test.Flatline = do.call(pmax, c(select(data, starts_with('test.Flatline_')), na.rm=TRUE)))
+  # Create overall test.Flatline column
+  data = data %>% 
+    mutate(test.Flatline = do.call(pmax, c(select(., starts_with('test.Flatline_')), na.rm=TRUE)))
   return(data)
 }
 
-# # OLD FLATLINE TEST #
+# # Testing flatline 2.0:
+car_test = flatline_test(SF_car, vars_to_test, num_flatline_sus, num_flatline_fail, flatline_thresholds)
+tib_test = flatline_test(SF_tib, vars_to_test, num_flatline_sus, num_flatline_fail, flatline_thresholds)
+
+# #### OLD (newish) Flatline Test 1.1 ####
+# flatline_test = function(site_data, vars_to_test, num_flatline_sus, num_flatline_fail, flatline_thresholds) {
+#   # Tests NEP data for consecutive unchanging values
+#   #  0 - Test not ran
+#   #  0.5 - Insufficient data (not enough previous entries)
+#   #  1 - Pass
+#   #  2 - Suspect - 3 or 4 equal repeated values
+#   #  3 - Fail - 5+ equal repeated values 
+#   # - - - - - - - - - - - - - - - - - -
+#   SUS_NUM = num_flatline_sus 
+#   FAIL_NUM = num_flatline_fail 
+#   data = site_data |> 
+#     mutate(across(all_of(vars_to_test), ~ 0, .names = 'test.Flatline_{.col}'))
+#   # Apply test logic:
+#   for (var in vars_to_test) {
+#     # DIRECT MATCHING: Extract threshold specifically assigned to this 'var'
+#     current_tol = flatline_thresholds[[var]]
+#     if (exists("progress_print_option") && tolower(progress_print_option) %in% c('y','yes')) {
+#       print(paste('Processing flatline for:', var, '| Threshold:', current_tol, '| at', Sys.time()))
+#     }
+#     
+#     col = data[[var]]
+#     flatline_lengths = get_flatline_lengths(col, current_tol)
+#     
+#     flag_col = case_when(
+#       row_number(data) < 5 ~ 0.5, # INSUFFICIENT DATA
+#       is.na(col) ~ 0,                   # TEST NOT RAN
+#       flatline_lengths >= FAIL_NUM ~ 3, # FAIL
+#       flatline_lengths >= SUS_NUM ~ 2, # SUSPECT
+#       TRUE ~ 1                         # PASS
+#     )
+#     data[[paste0('test.Flatline_',var)]] = flag_col
+#   }
+#   # create overall test.Flatline column
+#   data = data |> 
+#     mutate(test.Flatline = do.call(pmax, c(select(data, starts_with('test.Flatline_')), na.rm=TRUE)))
+#   return(data)
+# }
+
+# # OLD FLATLINE TEST #####
 # get_flatline_lengths = function(x) {
 #   # function which looks at a list of values and returns a list of how many times each value has been repeated
 #   # e.g. if x = c(1,2,2,5,5,5) this would return: c(1,1,2,1,2,3)
@@ -192,7 +233,7 @@ flatline_test = function(site_data, vars_to_test, num_flatline_sus, num_flatline
 #   return(data)
 # }
 
-# CLIMATOLOGY TEST #
+# CLIMATOLOGY TEST #####
 climatology_test = function(site_data, vars_to_test, seasonal_thresholds) {
   # Tests NEP data for seasonal-specific threshold exceedence
   #  0 - Test not ran

@@ -72,8 +72,8 @@ min_num_pts_rate_of_change = 3
 sample_interval = 30 # minutes
 # For Flatline Test:
 # For Flatline Test:
-num_flatline_sus = 12 # 6 hours
-num_flatline_fail = 24 # 12 hours
+num_flatline_sus = 24 # 12 hours
+num_flatline_fail = 48 # 24 hours
 flatline_thresholds = c(
   'ph' = 0.0099,
   'temp.c' = 0.01,
@@ -138,32 +138,40 @@ gonski = gonski %>%
 # Combine just-now-QA/QC'd delaware data with data which had previously been QA/QC'd:
 delaware_combined = rbind(gonski,qa_delaware, fill=TRUE)
 
-qa_data_list$DelawareInland = delaware_combined
-qa_data_list$DelawareInland = qa_data_list$DelawareInland |> 
-  mutate(ph_flag = do.call(pmax, c(select(qa_data_list$DelawareInland, ends_with('_ph')),na.rm=TRUE)),
-         do_flag = do.call(pmax, c(select(qa_data_list$DelawareInland, ends_with('_do.mgl')),na.rm=TRUE)),
-         temp_flag = do.call(pmax,c(select(qa_data_list$DelawareInland, ends_with('_temp.c')),na.rm=TRUE)),
-         sal_flag = do.call(pmax,c(select(qa_data_list$DelawareInland, ends_with('_sal.ppt')),na.rm=TRUE))
+qa_delaware = delaware_combined
+qa_delaware = qa_delaware %>% 
+  mutate(ph_flag = do.call(pmax, c(select(qa_delaware, ends_with('_ph')),na.rm=TRUE)),
+         do_flag = do.call(pmax, c(select(qa_delaware, ends_with('_do.mgl')),na.rm=TRUE)),
+         temp_flag = do.call(pmax,c(select(qa_delaware, ends_with('_temp.c')),na.rm=TRUE)),
+         sal_flag = do.call(pmax,c(select(qa_delaware, ends_with('_sal.ppt')),na.rm=TRUE))
   )
+
+# qa_data_list$DelawareInland = delaware_combined
+# qa_data_list$DelawareInland = qa_data_list$DelawareInland |> 
+#   mutate(ph_flag = do.call(pmax, c(select(qa_data_list$DelawareInland, ends_with('_ph')),na.rm=TRUE)),
+#          do_flag = do.call(pmax, c(select(qa_data_list$DelawareInland, ends_with('_do.mgl')),na.rm=TRUE)),
+#          temp_flag = do.call(pmax,c(select(qa_data_list$DelawareInland, ends_with('_temp.c')),na.rm=TRUE)),
+#          sal_flag = do.call(pmax,c(select(qa_data_list$DelawareInland, ends_with('_sal.ppt')),na.rm=TRUE))
+#   )
 #---------
 
 #### Step 3: Saving Options ####
 
-if (interactive()) {
-  if (tolower(save_Odrive_option) %in% c('y','yes')) {
-    save_path = 'O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/4. Finalized Data from NEPs/qa_delaware.Rdata'
-    cat('Saving qa_delaware to:',save_path,'\n')
-    save(qa_delaware, file=save_path)
-    cat('qa_delaware saved successfully to O:drive. \n')
-  } else {
-    cat('Skipped saving to O:drive. \n')
-  }
-  if (tolower(save_local_option) %in% c('y','yes')) {
-    save_path = getwd()
-    cat('Saving Delaware data locally to current directory \n')
-    save(qa_delaware, file = paste0(getwd(),'qa_delaware'))
-    cat('qa_delaware saved locally. \n')
-  }
-} else {
-  cat('Skipped saving locally. \n')
-}
+# if (interactive()) {
+#   if (tolower(save_Odrive_option) %in% c('y','yes')) {
+#     save_path = 'O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/4. Finalized Data from NEPs/qa_delaware.Rdata'
+#     cat('Saving qa_delaware to:',save_path,'\n')
+#     save(qa_delaware, file=save_path)
+#     cat('qa_delaware saved successfully to O:drive. \n')
+#   } else {
+#     cat('Skipped saving to O:drive. \n')
+#   }
+#   if (tolower(save_local_option) %in% c('y','yes')) {
+#     save_path = getwd()
+#     cat('Saving Delaware data locally to current directory \n')
+#     save(qa_delaware, file = paste0(getwd(),'qa_delaware'))
+#     cat('qa_delaware saved locally. \n')
+#   }
+# } else {
+#   cat('Skipped saving locally. \n')
+# }

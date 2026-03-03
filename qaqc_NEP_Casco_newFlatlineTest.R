@@ -71,8 +71,8 @@ min_num_pts_rate_of_change = 3
 sample_interval = 60 # minutes
 # For Flatline Test:
 # For Flatline Test:
-num_flatline_sus = 6 # 6 hours
-num_flatline_fail = 12 # 12 hours
+num_flatline_sus = 12 # 12 hours
+num_flatline_fail = 24 # 24 hours
 flatline_thresholds = c(
   'ph' = 0.0099,
   'temp.c' = 0.01,
@@ -123,36 +123,41 @@ qa_casco = qaqc_nep(data_list$Cascobay, vars_to_test, user_thresholds, sensor_th
                     time_interval=sample_interval, attenuated_signal_thresholds, num_sd_for_rate_of_change, num_flatline_sus, num_flatline_fail,flatline_thresholds)
 
 ### CREATE 'flags' column to take the maximum (worst) flag across the row:
-qa_casco = qa_casco |> 
-  mutate(flags = do.call(pmax, c(select(qa_casco, starts_with('test.')), na.rm=TRUE)))
-
-qa_data_list$Cascobay = qa_casco
-qa_data_list$Cascobay = qa_data_list$Cascobay |> 
-  mutate(ph_flag = do.call(pmax, c(select(qa_data_list$Cascobay, ends_with('_ph')),na.rm=TRUE)),
-         do_flag = do.call(pmax, c(select(qa_data_list$Cascobay, ends_with('_do.mgl')),na.rm=TRUE)),
-         temp_flag = do.call(pmax,c(select(qa_data_list$Cascobay, ends_with('_temp.c')),na.rm=TRUE)),
-         sal_flag = do.call(pmax,c(select(qa_data_list$Cascobay, ends_with('_sal.ppt')),na.rm=TRUE))
+qa_casco = qa_casco %>% 
+  mutate(flags = do.call(pmax, c(select(qa_casco, starts_with('test.')), na.rm=TRUE))) %>% 
+  mutate(ph_flag = do.call(pmax, c(select(qa_casco, ends_with('_ph')),na.rm=TRUE)),
+         do_flag = do.call(pmax, c(select(qa_casco, ends_with('_do.mgl')),na.rm=TRUE)),
+         temp_flag = do.call(pmax,c(select(qa_casco, ends_with('_temp.c')),na.rm=TRUE)),
+         sal_flag = do.call(pmax,c(select(qa_casco, ends_with('_sal.ppt')),na.rm=TRUE))
   )
+
+# qa_data_list$Cascobay = qa_casco
+# qa_data_list$Cascobay = qa_data_list$Cascobay |> 
+#   mutate(ph_flag = do.call(pmax, c(select(qa_data_list$Cascobay, ends_with('_ph')),na.rm=TRUE)),
+#          do_flag = do.call(pmax, c(select(qa_data_list$Cascobay, ends_with('_do.mgl')),na.rm=TRUE)),
+#          temp_flag = do.call(pmax,c(select(qa_data_list$Cascobay, ends_with('_temp.c')),na.rm=TRUE)),
+#          sal_flag = do.call(pmax,c(select(qa_data_list$Cascobay, ends_with('_sal.ppt')),na.rm=TRUE))
+#   )
 #-------------
 
 #### Step 3: Saving Options ####
 
-if (interactive()) {
-  if (tolower(save_Odrive_option) %in% c('y','yes')) {
-    save_path = 'O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/4. Finalized Data from NEPs/qa_casco.Rdata'
-    cat('Saving qa_casco to:',save_path,'\n')
-    save(qa_casco, file=save_path)
-    cat('qa_casco saved successfully to O:drive \n')
-  } else {
-    cat('Skipped saving to O:drive. \n')
-  }
-  if (tolower(save_local_option) %in% c('y','yes')) {
-    save_path = getwd()
-    cat('Saving Casco data locally to current directory \n')
-    save(qa_casco, file = paste0(getwd(),'qa_casco.Rdata'))
-    cat('qa_casco saved locally. \n')
-  }
-} else {
-  cat('Skipped saving locally. \n')
-}
+# if (interactive()) {
+#   if (tolower(save_Odrive_option) %in% c('y','yes')) {
+#     save_path = 'O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/4. Finalized Data from NEPs/qa_casco.Rdata'
+#     cat('Saving qa_casco to:',save_path,'\n')
+#     save(qa_casco, file=save_path)
+#     cat('qa_casco saved successfully to O:drive \n')
+#   } else {
+#     cat('Skipped saving to O:drive. \n')
+#   }
+#   if (tolower(save_local_option) %in% c('y','yes')) {
+#     save_path = getwd()
+#     cat('Saving Casco data locally to current directory \n')
+#     save(qa_casco, file = paste0(getwd(),'qa_casco.Rdata'))
+#     cat('qa_casco saved locally. \n')
+#   }
+# } else {
+#   cat('Skipped saving locally. \n')
+# }
 

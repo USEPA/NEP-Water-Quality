@@ -68,8 +68,8 @@ num_sd_for_rate_of_change = 3
 min_num_pts_rate_of_change = 3
 sample_interval = 6 # minutes
 # For Flatline Test:
-num_flatline_sus = 60 # 6 hour
-num_flatline_fail = 120 # 12 hours
+num_flatline_sus = 60 # 12 hour
+num_flatline_fail = 120 # 24 hours
 flatline_thresholds = c(
   'ph' = 0.0099,
   'temp.c' = 0.01,
