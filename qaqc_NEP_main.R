@@ -144,8 +144,8 @@ flatline_test = function(site_data, vars_to_test, num_flatline_sus, num_flatline
 }
 
 # # Testing flatline 2.0:
-car_test = flatline_test(SF_car, vars_to_test, num_flatline_sus, num_flatline_fail, flatline_thresholds)
-tib_test = flatline_test(SF_tib, vars_to_test, num_flatline_sus, num_flatline_fail, flatline_thresholds)
+# car_test = flatline_test(SF_car, vars_to_test, num_flatline_sus, num_flatline_fail, flatline_thresholds)
+# tib_test = flatline_test(SF_tib, vars_to_test, num_flatline_sus, num_flatline_fail, flatline_thresholds)
 
 # #### OLD (newish) Flatline Test 1.1 ####
 # flatline_test = function(site_data, vars_to_test, num_flatline_sus, num_flatline_fail, flatline_thresholds) {
@@ -493,4 +493,5 @@ convert_ph_NBS_to_Total = function(data) {
   }
   return(data) 
 }
+
 
