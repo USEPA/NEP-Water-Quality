@@ -669,7 +669,7 @@ for (i in 1:nrow(morro_biofoul_processed)) {
 ###########    Additional Edits by Andrew, Dec 11-16 2025     #################
 ###############################################################################
 
-####### Update column names for all NEPs when necessary to eliminate '.' in names, for easier use across R/Python/Matlab ######
+####### Update column names for all NEPs replace '.' with '_' in column headers, for easier use across R/Python/Matlab ######
 colnames(qa_data_list_revision$Barnegat) = gsub('.','_',colnames(qa_data_list_revision$Barnegat), fixed=TRUE)
 colnames(pass_data_list_revision$Barnegat) = gsub('.','_',colnames(pass_data_list_revision$Barnegat), fixed=TRUE)
 colnames(qa_data_list_revision$Cascobay) = gsub('.','_',colnames(qa_data_list_revision$Cascobay), fixed=TRUE)
@@ -868,6 +868,7 @@ save(nep_filtered_data,file=paste0("O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidificatio
 
 # save(qa_data_list_revision,file="C:/Users/spacella/OneDrive - Environmental Protection Agency (EPA)/NEP OA standards analysis/qa_data_list_revision.Rdata")
 # save(pass_data_list_revision,file="C:/Users/spacella/OneDrive - Environmental Protection Agency (EPA)/NEP OA standards analysis/pass_data_list_revision.Rdata")
+
 
 
 
