@@ -1,7 +1,7 @@
 # Andrew Mandovi
 # ORISE EPA - Office of Research and Development, Pacific Coastal Ecology Branch, Newport, OR
 # Originally created: Feb 13, 2026
-# Last updated: Feb 23, 2026
+# Last updated: Mar 12, 2026
 
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 # The purpose of this script is to 
@@ -18,6 +18,37 @@
 # (1a) Re-name site.codes for SF Bay: 
 # CARQ (Carquinez) --> CMA (Cal Maritime Academy)
 # TIBC1 (Tiburon) --> EOS (Earth Ocean Sciences Bldg, SFSU)
+
+# # load packages
+# library(data.table)
+# library(lubridate)
+# library(ggplot2)
+# library(scales)
+# library(broom)
+# library(seacarb)
+# library(patchwork)
+# library(gridExtra)
+# library(grid)
+# library(viridis) # color scale package
+# library(ggsci)  # high quality color packages used in scientific journals
+# library(RColorBrewer) # color mixer
+# library(hexbin) # hex binning for plotting dense data
+# library(tidyverse)
+# library(scattermore)
+
+
+
+# ~~~~~~~~~~~~~~~~ ALWAYS Save All the data from end of day:  ~~~~~~~~~~~~~~~~~~~####
+# local_data_path = 'C:/Users/amandovi/OneDrive - Environmental Protection Agency (EPA)/Profile/Documents/NEP_Monitoring_Project/Data/'
+data_path = 'O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/Finalized Data from NEPs/Continuous'
+Odrive_data_path = 'O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/'
+
+# load(paste0(Odrive_data_path,'qa_data_list_revision.Rdata'))
+# load(paste0(Odrive_data_path,'pass_data_list_revision.Rdata'))
+# load('Alldata.R')       # to load data
+# save.image('Alldata.R') # to save after working with data / shutting down
+load(paste0(Odrive_data_path,'nep_unfiltered_data_20260107-165206.Rdata'))
+load(paste0(Odrive_data_path,'nep_filtered_data_20260107-165206.Rdata'))
 
 # Set Working Directory: Adjust to local 
 setwd('C:/Users/Amandovi/OneDrive - Environmental Protection Agency (EPA)/Profile/Documents/R')
@@ -69,11 +100,100 @@ sf_filtered = sf_recombined %>%
 # filtering only for 2015-present data to align with other NEPs:
 sf_data = sf_recombined %>% filter(year(datetime_utc) > 2014)
 
-####### SAVING: #########
-write_csv(sf_data, paste0(Odrive_data_path,'sf_nep_data.csv'))
 
-################################### Plotting & Troubleshooting Below ################################
+# ####### SAVING: #########
+# write_csv(sf_data, paste0(Odrive_data_path,'sf_nep_data.csv'))
 
+# Inserting new SF Data in place of previous data:
+# nep_unfiltered_data$SanFrancisco = sf_recombined
+# nep_filtered_data$SanFrancisco = sf_filtered
+#
+# timestamp <- format(Sys.time(), "%Y%m%d-%H%M")
+# save(nep_unfiltered_data,file=paste0("O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_unfiltered_data_",timestamp,".Rdata"))
+# save(nep_filtered_data,file=paste0("O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_filtered_data_",timestamp,".Rdata"))
+#
+# 
+# # ################################### Plotting & Troubleshooting Below ################################
+# 
+# sample_interval = 6
+# sf_car_attenuated_thresholds = list(
+#   # values represent the % of "normal" variability required to not be flagged 
+#   ph = list(sus = 0.15, fail = 0.05),  # suspect if variability < 15%, fail if < 5%
+#   temp.c = list(sus=0.1, fail = 0.03),
+#   sal.ppt = list(sus = 0.15, fail = 0.05),
+#   do.mgl = list(sus = 0.2, fail = 0.1) # DO is very noisy, so we are using a wider threshold
+# )
+# interp_car = interpolate_data(SF_car,vars_to_test,time_interval = sample_interval)
+# interp_car_withSD = calc_rolling_sd(interp_car, vars_to_test, sd_window_hrs = 12)
+# sf_car_test = dynamic_attenuated_test(SF_car, interp_car_withSD, vars_to_test, sf_car_attenuated_thresholds)
+# 
+# ggplot(sf_car_test, aes(datetime.utc,sal.ppt,color=as.factor(test.AttenuatedSignal)))+
+#   geom_scattermore(pointsize=2)+
+#   scale_color_manual(values = c("0" = 'gray',"1" = "seagreen", "2" = "goldenrod", "3" = "firebrick1" ))+
+#   ylim(0,50)
+# 
+# test_subset = sf_car_test %>%
+#   filter(between(datetime.utc,
+#                  as.POSIXct('2016-07-01 00:00:00'),
+#                  as.POSIXct('2017-01-01 23:59:59')))
+# 
+# 
+# 
+# 
+# SF_car_test = attenuated_signal_test_sd(SF_car, interp_car, vars_to_test, time_window=24, attsig_fail = 0.5, attsig_sus = 1.0, time_interval = sample_interval)
+# car_subset = SF_car_test %>%
+#   filter(between(datetime.utc,
+#                  as.POSIXct('2011-04-28 00:00:00'),
+#                  as.POSIXct('2011-04-30 23:59:59')))
+# 
+# ggplot(car_subset, aes(datetime.utc,ph, color=as.factor(test.AttenuatedSignal_ph)))+
+#   geom_scattermore()+
+#   scale_color_manual(values = c("1" = "seagreen", "2" = "goldenrod", "3" = "firebrick1" ))+
+#   theme(legend.position='none')
+# # 
+# ggplot(sf_recombined, aes(x = as.factor(do_mgl_qc), y = as.factor(test_AttenuatedSignal_do_mgl))) +
+#   geom_bin2d() +
+#   scale_fill_viridis_c() +
+#   labs(x = "Original QC Flag", y = "New Attenuated Test Flag",
+#        title = "DO: Old vs. New Logic Agreement")
+# 
+# sf_data$flag_diff = sf_data$flags_2026-sf_data$flags_revision
+# sf_diffs = sf_data %>% filter(flag_diff > 1 | flag_diff < -1)
+# # 
+# # APRIL 2015 'JUMP' IN DATA POST-CLEANING
+# # 
+# ggplot(sf_data, aes(datetime_utc, flag_diff))+
+#   geom_point()+
+#   labs(title='EPA Flags minus Caloos Flags (flags_2026 - flags_revision)',subtitle='Higher = EPA flags are catching bad data, Lower = CALOOS flags are catching')
+# 
+# sf_subset = sf_data %>%
+#   filter(between(datetime_utc,
+#                  as.POSIXct('2015-04-01 00:00:00'),
+#                  as.POSIXct('2015-04-30 23:59:59'))) %>%
+#   filter(site_code=='CMA')
+# ggplot(sf_subset, aes(x=datetime_utc,  y=temp_c, color=as.factor(flags_2026)))+
+#   geom_scattermore(pixels=c(1000,1000),pointsize=3,alpha=1)+
+#   scale_color_manual(values = c("1" = "seagreen", "2" = "goldenrod", "3" = "firebrick1" ))+
+#   theme(legend.position = 'none')
+# 
+# 
+# sf_subset2 = sf_data %>% 
+#   filter(between(datetime_utc,
+#                  as.POSIXct('2015-06-01 00:00:00'),
+#                  as.POSIXct('2015-06-03 23:59:59'))) %>% 
+#   filter(site_code == 'CMA')
+# ggplot(sf_subset2, aes(datetime_utc,sal_ppt,color=as.factor(flags_2026)))+
+#   geom_scattermore(pixels=c(1000,1000),pointsize=4,alpha=1)+
+#   scale_color_manual(values = c("1" = "seagreen", "2" = "goldenrod", "3" = "firebrick1" ))+
+#   theme(legend.position = 'none')+
+#   ylim(0,30)
+# ggplot(sf_subset2, aes(datetime_utc,sal_ppt,color=as.factor(flags)))+
+#   geom_scattermore(pixels=c(1000,1000),pointsize=4,alpha=1)+
+#   scale_color_manual(values = c("1" = "seagreen", "2" = "goldenrod", "3" = "firebrick1" ))+
+#   theme(legend.position = 'none')+
+#   ylim(0,30)
+# 
+# 
 # ggplot(sf_data, aes(x=datetime_utc,  y=ph_T, color=as.factor(flags_2026)))+
 #   geom_scattermore(pixels=c(1000,1000),pointsize=3,alpha=1)+
 #   scale_color_manual(values = c("1" = "seagreen", "2" = "goldenrod", "3" = "firebrick1" ))+
@@ -87,10 +207,10 @@ write_csv(sf_data, paste0(Odrive_data_path,'sf_nep_data.csv'))
 #   theme(legend.position = 'none')
 # 
 # # zooming in onto stretch in 2019 where pH dropped lower but still a lot of 'pass' flags
-# sf_subset = sf_data %>% 
+# sf_subset = sf_data %>%
 #   filter(between(datetime_utc,
 #                  as.POSIXct('2019-07-06 00:00:00'),
-#                  as.POSIXct('2019-07-18 23:59:59'))) %>% 
+#                  as.POSIXct('2019-07-18 23:59:59'))) %>%
 #   filter(site_code == 'EOS')
 # ggplot(sf_subset, aes(x=datetime_utc,  y=ph_T, color=as.factor(test_Flatline_ph)))+
 #   geom_scattermore(pixels=c(1000,1000),pointsize=3,alpha=1)+

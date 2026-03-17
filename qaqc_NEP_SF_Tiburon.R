@@ -2,7 +2,7 @@
 # Andrew Mandovi
 # ORISE EPA - Office of Research and Development, Pacific Coastal Ecology Branch, Newport, OR
 # Originally created: Feb 13, 2026
-# Last updated: Feb 23, 2026
+# Last updated: Mar 12, 2026
 
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 #                    INSTRUCTIONS FOR USER: 
@@ -80,13 +80,13 @@ flatline_thresholds = c(
 # these values dictate the exceedence thresholds to which the difference min(var) and max(var) over a given 12-hour period would FAIL or be SUSPECT if they do not exceed them 
 # similar to a flat-line test, it tests for near-flat-line scenarios, where a signal is overly dampened by an external factor
 attenuated_signal_thresholds = list(
-  ph = list(min_fail = 0.001, min_sus = 0.01),
-  temp.c = list(min_fail = 0.01, min_sus = 0.1),
-  sal.ppt = list(min_fail = 0.001, min_sus = 0.01),
-  do.mgl = list(min_fail = 0.1, min_sus = 0.3),
-  co2.ppm = list(min_fail = 1, min_sus = 2)
+  # values represent the % of "normal" variability required to not be flagged 
+  ph = list(sus = 0.15, fail = 0.05),  # suspect if variability < 15%, fail if < 5%
+  temp.c = list(sus=0.1, fail = 0.03),
+  sal.ppt = list(sus = 0.15, fail = 0.05),
+  do.mgl = list(sus = 0.2, fail = 0.1) # DO is very noisy, so we are using a wider threshold
 )
-time_window = 24  # Time (in hours) to look back across to compare the signal against (default = 24-hours)
+time_window = 12  # Time (in hours) to look back across to compare the signal against (default = 24-hours)
 # Threshold lists 
 user_thresholds = list(
   ph = list(min=ph_user_min, max=ph_user_max),
@@ -114,6 +114,8 @@ spike_thresholds = list(
 #### Step 2. Running QA script for Tiburon: ####
 vars_to_test = c('ph','temp.c','sal.ppt','do.mgl')
 
+SF_tib = SF_tib %>% 
+  filter(year(datetime.utc) > 2014)
 
 # RUN SCRIPT: 
 qa_sf_tib = qaqc_nep(SF_tib, vars_to_test, user_thresholds, sensor_thresholds, spike_thresholds, seasonal_thresholds, time_window,
