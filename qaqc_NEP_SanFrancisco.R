@@ -66,7 +66,6 @@ nep_unfiltered_data$SanFrancisco = nep_unfiltered_data$SanFrancisco %>%
                                 'CARQ' ~ 'CMA',
                                 .default = site.code))
 
-
 # (2) Split the San Francisco Bay NEP data into its separate sites
 SF_tib = nep_unfiltered_data$SanFrancisco %>% 
   filter(site.code == 'EOS')
@@ -99,7 +98,6 @@ sf_filtered = sf_recombined %>%
 
 # filtering only for 2015-present data to align with other NEPs:
 sf_data = sf_recombined %>% filter(year(datetime_utc) > 2014)
-
 
 # ####### SAVING: #########
 # write_csv(sf_data, paste0(Odrive_data_path,'sf_nep_data.csv'))
