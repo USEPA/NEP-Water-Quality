@@ -77,16 +77,15 @@ flatline_thresholds = c(
   'do.mgl' = 0.005
 )
 # For Attenuated Signal Test:
-# these values dictate the exceedence thresholds to which the difference min(var) and max(var) over a given 12-hour period would FAIL or be SUSPECT if they do not exceed them 
+# these values dictate the exceedence thresholds to which the standard deviation over the previous 12-hour period would FAIL or be SUSPECT if they do not exceed them 
 # similar to a flat-line test, it tests for near-flat-line scenarios, where a signal is overly dampened by an external factor
 attenuated_signal_thresholds = list(
-  # values represent the % of "normal" variability required to not be flagged 
-  ph = list(sus = 0.15, fail = 0.05),  # suspect if variability < 15%, fail if < 5%
-  temp.c = list(sus=0.1, fail = 0.03),
+  ph = list(sus = 0.005, fail = 0.001),  
+  temp.c = list(sus=0.05, fail = 0.02),
   sal.ppt = list(sus = 0.15, fail = 0.05),
-  do.mgl = list(sus = 0.2, fail = 0.1) # DO is very noisy, so we are using a wider threshold
+  do.mgl = list(sus = 0.05, fail = 0.02) 
 )
-time_window = 12  # Time (in hours) to look back across to compare the signal against (default = 24-hours)
+time_window_attsig = 12  # Time (in hours) to look back across to compare the signal against (default = 24-hours)
 # Threshold lists 
 user_thresholds = list(
   ph = list(min=ph_user_min, max=ph_user_max),
@@ -119,7 +118,7 @@ SF_tib = SF_tib %>%
 
 # RUN SCRIPT: 
 qa_sf_tib = qaqc_nep(SF_tib, vars_to_test, user_thresholds, sensor_thresholds, spike_thresholds, seasonal_thresholds, time_window,
-                    time_interval=sample_interval, attenuated_signal_thresholds, num_sd_for_rate_of_change, num_flatline_sus, num_flatline_fail, flatline_thresholds)
+                    time_interval=sample_interval, attenuated_signal_thresholds, time_window_attsig, num_sd_for_rate_of_change, num_flatline_sus, num_flatline_fail, flatline_thresholds)
 
 
 # Create 'flags_2026' column to take the maximum (worst) flag across the row:

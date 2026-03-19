@@ -96,9 +96,6 @@ sf_filtered = sf_recombined %>%
   filter(year(datetime_utc) > 2014,
          flags_2026 == 1)
 
-# filtering only for 2015-present data to align with other NEPs:
-sf_data = sf_recombined %>% filter(year(datetime_utc) > 2014)
-
 # ####### SAVING: #########
 # write_csv(sf_data, paste0(Odrive_data_path,'sf_nep_data.csv'))
 
@@ -110,7 +107,35 @@ sf_data = sf_recombined %>% filter(year(datetime_utc) > 2014)
 # save(nep_unfiltered_data,file=paste0("O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_unfiltered_data_",timestamp,".Rdata"))
 # save(nep_filtered_data,file=paste0("O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_filtered_data_",timestamp,".Rdata"))
 #
+
+
+### Testing block
+# interp_car = interpolate_data(SF_car, vars_to_test)
+# car_rolling_sd = calc_rolling_sd(interp_car, vars_to_test, sd_window_hrs = 12)
+# car_attsig_test = dynamic_attenuated_test(SF_car, car_rolling_sd, vars_to_test, attenuated_signal_thresholds)
 # 
+# interp_tib = interpolate_data(SF_tib, vars_to_test)
+# tib_rolling_sd = calc_rolling_sd(interp_tib, vars_to_test, sd_window_hrs = 12)
+# tib_attsig_test = dynamic_attenuated_test(SF_tib, tib_rolling_sd, vars_to_test, attenuated_signal_thresholds)
+# 
+# 
+# sf_segment = sf_recombined %>% 
+#   filter(site_code == 'EOS') %>% 
+#   filter(flags_2026 == 1) %>% 
+#   filter(between(datetime_utc,
+#                  as.POSIXct('2019-07-01 00:00:00'),
+#                  as.POSIXct('2019-08-05 23:59:59')))
+# 
+# ggplot(sf_segment, aes(datetime_utc, ph, color=as.factor(flags_2026)))+
+#   # ylim(5,11)+
+#   geom_scattermore(pointsize = 3)+
+#   scale_color_manual(values = c("0" = 'gray',"1" = "seagreen", "2" = "goldenrod", "3" = "firebrick1" ))
+#   
+# 
+# # filtering only for 2015-present data to align with other NEPs:
+# sf_data = sf_recombined %>% filter(year(datetime_utc) > 2014)
+
+
 # # ################################### Plotting & Troubleshooting Below ################################
 # 
 # sample_interval = 6

@@ -401,101 +401,104 @@ rate_change_test = function(data, data_interp, vars_to_test, num_sd_for_rate_cha
 
 # ATTENUATED SIGNAL TEST 2.0 - running against standard deviation of a prevailing time period, rather than a set +/- value
 
-attenuated_signal_test_sd = function(data, data_interp, vars_to_test, time_window=24, attsig_fail = 0.5, attsig_sus = 1.0, time_interval = sample_interval) {
-  # Tests NEP data for a near-flatline (change relative to a designated suspect and fail threshold ('attenuated_signal_thresholds'))
-  # time_window: how far back (in hours, default = 24 hours) you want to assess the min/max range of values for the test
-  # attsig_fail: the suspect threshold to be tested against (max-min not exceeding this many SDs will result in a fail flag)
-  # attsig_sus: the suspect threshold to be tested against (max-min not exceeding this many SDs will result in a suspect flag)
-  # time_interval: the MINIMUM interval (in minutes, default = 15 min) between measurements in the dataset
-  #    --> NOTE: Even if 90% of the dataset is a 15-min interval, if 10% is a 5-min interval, choose 5 minutes. This function will
-  #              interpolate the data time-series and remove any rows that didn't take measurements. This ensures full data inclusion
-  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  # Test flags:
-  #  0 - Test not ran
-  #  1 - Pass - exceeds both suspect and fail thresholds for change
-  #  2 - Suspect - exceeds fail threshold but does not exceed suspect threshold
-  #  3 - Fail - does not exceed fail threshold
-  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  # 1. Prepare Join Keys (Snap to 1-minute grid to handle jitter)
-  data_rounded = data %>%
-    mutate(join_time = lubridate::round_date(datetime.utc, "1 minute"))
-  
-  interp_rounded = data_interp %>%
-    mutate(join_time = lubridate::round_date(datetime.utc, "1 minute"))
-  
-  # 2. Calculate SDs using your provided function
-  # This creates the 'sd_ph', 'sd_temp.c' etc. columns
-  interp_rounded = calc_rolling_sd(interp_rounded, vars_to_test, 
-                                   time_interval = time_interval, 
-                                   sd_window_hrs = time_window)
-  
-  # 3. Calculate Rolling Range (Max - Min)
-  window_before = lubridate::hours(6)
-  
-  for (var in vars_to_test) {
-    message(paste("Calculating range for:", var))
-    
-    interp_rounded = interp_rounded %>%
-      mutate(
-        !!paste0(var, "_max") := slide_index_dbl(
-          .x = !!sym(var), 
-          .i = join_time, 
-          .f = ~if(all(is.na(.x))) NA_real_ else max(.x, na.rm = TRUE), 
-          .before = window_before
-        ),
-        !!paste0(var, "_min") := slide_index_dbl(
-          .x = !!sym(var), 
-          .i = join_time, 
-          .f = ~if(all(is.na(.x))) NA_real_ else min(.x, na.rm = TRUE), 
-          .before = window_before
-        )
-      ) %>%
-      mutate(!!paste0(var, "_diff") := !!sym(paste0(var, "_max")) - !!sym(paste0(var, "_min")))
-  }
-  
-  # 4. Join the SD and Diff columns back to the raw data
-  # We select 'join_time' plus any column starting with 'sd_' or ending in '_diff'
-  data_results = data_rounded %>%
-    left_join(
-      interp_rounded %>% select(join_time, starts_with("sd_"), ends_with("_diff")), 
-      by = "join_time"
-    )
-  
-  # 5. Run the Flagging Logic
-  for (var in vars_to_test) {
-    diff_col_name = paste0(var, "_diff")
-    sd_col_name = paste0("sd_", var)
-    
-    # Debug: Check if the column actually exists in the joined dataframe
-    if (!sd_col_name %in% names(data_results)) {
-      warning(paste("Column", sd_col_name, "not found after join. Skipping logic for", var))
-      next
-    }
-    
-    data_results = data_results %>%
-      mutate(!!paste0("test.AttenuatedSignal_", var) := case_when(
-        is.na(!!sym(var)) | is.na(!!sym(sd_col_name)) | is.na(!!sym(diff_col_name)) ~ 0,
-        !!sym(diff_col_name) < (0.5 * !!sym(sd_col_name)) ~ 3,
-        !!sym(diff_col_name) < (1.0 * !!sym(sd_col_name)) ~ 2,
-        TRUE ~ 1
-      ))
-  }
-  
-  # 6. Final Summary and Cleanup
-  data_results = data_results %>%
-    mutate(test.AttenuatedSignal = do.call(pmax, c(select(., starts_with("test.AttenuatedSignal_")), na.rm = TRUE))) %>%
-    # select(-join_time, -starts_with("sd_"), -ends_with("_diff"), -ends_with("_max"), -ends_with("_min"))
-  
-  return(data_results)
-}
+# attenuated_signal_test_sd = function(data, data_interp, vars_to_test, time_window=24, attsig_fail = 0.5, attsig_sus = 1.0, time_interval = sample_interval) {
+#   # Tests NEP data for a near-flatline (change relative to a designated suspect and fail threshold ('attenuated_signal_thresholds'))
+#   # time_window: how far back (in hours, default = 24 hours) you want to assess the min/max range of values for the test
+#   # attsig_fail: the suspect threshold to be tested against (max-min not exceeding this many SDs will result in a fail flag)
+#   # attsig_sus: the suspect threshold to be tested against (max-min not exceeding this many SDs will result in a suspect flag)
+#   # time_interval: the MINIMUM interval (in minutes, default = 15 min) between measurements in the dataset
+#   #    --> NOTE: Even if 90% of the dataset is a 15-min interval, if 10% is a 5-min interval, choose 5 minutes. This function will
+#   #              interpolate the data time-series and remove any rows that didn't take measurements. This ensures full data inclusion
+#   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#   # Test flags:
+#   #  0 - Test not ran
+#   #  1 - Pass - exceeds both suspect and fail thresholds for change
+#   #  2 - Suspect - exceeds fail threshold but does not exceed suspect threshold
+#   #  3 - Fail - does not exceed fail threshold
+#   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#   # 1. Prepare Join Keys (Snap to 1-minute grid to handle jitter)
+#   data_rounded = data %>%
+#     mutate(join_time = lubridate::round_date(datetime.utc, "1 minute"))
+#   
+#   interp_rounded = data_interp %>%
+#     mutate(join_time = lubridate::round_date(datetime.utc, "1 minute"))
+#   
+#   # 2. Calculate SDs using your provided function
+#   # This creates the 'sd_ph', 'sd_temp.c' etc. columns
+#   interp_rounded = calc_rolling_sd(interp_rounded, vars_to_test, 
+#                                    time_interval = time_interval, 
+#                                    sd_window_hrs = time_window)
+#   
+#   # 3. Calculate Rolling Range (Max - Min)
+#   window_before = lubridate::hours(6)
+#   
+#   for (var in vars_to_test) {
+#     message(paste("Calculating range for:", var))
+#     
+#     interp_rounded = interp_rounded %>%
+#       mutate(
+#         !!paste0(var, "_max") := slide_index_dbl(
+#           .x = !!sym(var), 
+#           .i = join_time, 
+#           .f = ~if(all(is.na(.x))) NA_real_ else max(.x, na.rm = TRUE), 
+#           .before = window_before
+#         ),
+#         !!paste0(var, "_min") := slide_index_dbl(
+#           .x = !!sym(var), 
+#           .i = join_time, 
+#           .f = ~if(all(is.na(.x))) NA_real_ else min(.x, na.rm = TRUE), 
+#           .before = window_before
+#         )
+#       ) %>%
+#       mutate(!!paste0(var, "_diff") := !!sym(paste0(var, "_max")) - !!sym(paste0(var, "_min")))
+#   }
+#   
+#   # 4. Join the SD and Diff columns back to the raw data
+#   # We select 'join_time' plus any column starting with 'sd_' or ending in '_diff'
+#   data_results = data_rounded %>%
+#     left_join(
+#       interp_rounded %>% select(join_time, starts_with("sd_"), ends_with("_diff")), 
+#       by = "join_time"
+#     )
+#   
+#   # 5. Run the Flagging Logic
+#   for (var in vars_to_test) {
+#     diff_col_name = paste0(var, "_diff")
+#     sd_col_name = paste0("sd_", var)
+#     
+#     # Debug: Check if the column actually exists in the joined dataframe
+#     if (!sd_col_name %in% names(data_results)) {
+#       warning(paste("Column", sd_col_name, "not found after join. Skipping logic for", var))
+#       next
+#     }
+#     
+#     data_results = data_results %>%
+#       mutate(!!paste0("test.AttenuatedSignal_", var) := case_when(
+#         is.na(!!sym(var)) | is.na(!!sym(sd_col_name)) | is.na(!!sym(diff_col_name)) ~ 0,
+#         !!sym(diff_col_name) < (0.5 * !!sym(sd_col_name)) ~ 3,
+#         !!sym(diff_col_name) < (1.0 * !!sym(sd_col_name)) ~ 2,
+#         TRUE ~ 1
+#       ))
+#   }
+#   
+#   # 6. Final Summary and Cleanup
+#   data_results = data_results %>%
+#     mutate(test.AttenuatedSignal = do.call(pmax, c(select(., starts_with("test.AttenuatedSignal_")), na.rm = TRUE))) %>%
+#     # select(-join_time, -starts_with("sd_"), -ends_with("_diff"), -ends_with("_max"), -ends_with("_min"))
+#   
+#   return(data_results)
+# }
+
 
 # Attenuated Signal Test 3.0
-dynamic_attenuated_test = function(data, data_interp, vars_to_test, thresholds) {
+dynamic_attenuated_test = function(data, data_interp, vars_to_test, thresholds, time_interval = sample_interval) {
   dt_raw = as.data.table(data)
   dt_interp = as.data.table(data_interp)
   
   setkey(dt_raw, datetime.utc)
   setkey(dt_interp, datetime.utc)
+  
+  n_rows = 12*60 / time_interval
   
   for (var in vars_to_test) {
     if (tolower(progress_print_option) %in% c('y','yes')) {
@@ -505,26 +508,49 @@ dynamic_attenuated_test = function(data, data_interp, vars_to_test, thresholds) 
     sd_col = paste0('sd_', var)
     test_col = paste0('test.AttenuatedSignal_', var)
     
-    # 1. Join SDs to raw data with a 10-min buffer to eliminate 'missing match' 0s
-    dt_raw[, sd_val_temp := dt_interp[dt_raw, get(sd_col), on = .(datetime.utc), roll = "nearest"]]
+    # 1. Pull the pre-calculated 12-hour SD into the raw data table
+    dt_raw[, current_sd := dt_interp[dt_raw, get(sd_col), on = .(datetime.utc), roll = "nearest"]]
     
-    # 2. Dynamic Baseline
-    typical_sd = median(dt_interp[[sd_col]], na.rm = TRUE)
-    
-    # Use your 'sus' and 'fail' column names here
-    fail_limit = typical_sd * thresholds[[var]]$fail
-    sus_limit = typical_sd * thresholds[[var]]$sus
-    
-    # 3. Logic: Default to 1, then apply 2, 3, and finally 0 for true missing data
+    # 2. Logic: Compare the 12-hour SD directly to your thresholds
+    # (Assuming thresholds are absolute values, e.g., 0.01 for pH)
     dt_raw[, (test_col) := 1] 
-    dt_raw[sd_val_temp < sus_limit, (test_col) := 2]
-    dt_raw[sd_val_temp < fail_limit, (test_col) := 3]
+    dt_raw[current_sd < thresholds[[var]]$sus, (test_col) := 2]
+    dt_raw[current_sd < thresholds[[var]]$fail, (test_col) := 3]
     
-    # If the raw data is NA OR the rolling SD is NA, mark as 'Not Run'
-    dt_raw[is.na(get(var)) | is.na(sd_val_temp), (test_col) := 0]
+    # 3. Handle missing data
+    dt_raw[is.na(get(var)) | is.na(current_sd), (test_col) := 0]
     
-    dt_raw[, sd_val_temp := NULL]
+    # Cleanup temp column
+    dt_raw[, current_sd := NULL]
   }
+    
+  #   # 1. Get the current SD to see if flat right now
+  #   dt_raw[, sd_val_temp := dt_interp[dt_raw, get(sd_col), on = .(datetime.utc), roll = "nearest"]]
+  #   
+  #   # 2. Dynamic Baseline
+  #   dt_interp[, rolling_median_sd := frollapply(get(sd_col), n=n_rows, FUN = median, na.rm=TRUE, align='right')]
+  #   # Map rolling baseline back to dt_raw
+  #   dt_raw[, typical_sd := dt_interp[dt_raw, rolling_median_sd, on = .(datetime.utc), roll='nearest']]
+  #   
+  #   # typical_sd = median(dt_interp[[sd_col]], na.rm = TRUE)
+  #   # 
+  #   # # Use your 'sus' and 'fail' column names here
+  #   # fail_limit = typical_sd * thresholds[[var]]$fail
+  #   # sus_limit = typical_sd * thresholds[[var]]$sus
+  #   
+  #   # 3. Logic: Default to 1, then apply 2, 3, and finally 0 for true missing data
+  #   dt_raw[, (test_col) := 1] 
+  #   dt_raw[sd_val_temp < (typical_sd * thresholds[[var]]$sus), (test_col) := 2]
+  #   dt_raw[sd_val_temp < (typical_sd * thresholds[[var]]$fail), (test_col) := 3]
+  #   # dt_raw[sd_val_temp < sus_limit, (test_col) := 2]
+  #   # dt_raw[sd_val_temp < fail_limit, (test_col) := 3]
+  #   
+  #   # If the raw data is NA OR the rolling SD is NA, mark as 'Not Run'
+  #   dt_raw[is.na(get(var)) | is.na(sd_val_temp), (test_col) := 0]
+  #   
+  #   dt_raw[, c('sd_val_temp','typical_sd') := NULL]
+  #   dt_interp[, rolling_median_sd := NULL]
+  # }
   
   # 5. Summary flag
   test_cols = grep("^test\\.AttenuatedSignal_", names(dt_raw), value = TRUE)
@@ -597,7 +623,7 @@ attenuated_signal_test = function(data, data_interp, vars_to_test, attenuated_si
 ### QAQC Function (calls individual test functions)####
 # _________________________________________________________ #
 qaqc_nep = function(data, columns_to_qa, user_thresholds, sensor_thresholds, spike_thresholds, seasonal_thresholds, time_window,
-                    time_interval, attenuated_signal_thresholds, num_sd_for_rate_change, num_flatline_sus, num_flatline_fail, flatline_thresholds) {
+                    time_interval, attenuated_signal_thresholds, time_window_attsig=12 , num_sd_for_rate_change, num_flatline_sus, num_flatline_fail, flatline_thresholds) {
 # METADATA: ####
 # Applies QARTOD testing across a single data-frame, assuming all data within the data-frame corresponds to a single NEP
 # Assumed column names:
@@ -643,7 +669,8 @@ qaqc_nep = function(data, columns_to_qa, user_thresholds, sensor_thresholds, spi
     site_data = rate_change_test(site_data, data_interp, vars_to_test, num_sd_for_rate_change)
     # attenuated signal:
     # site_data = attenuated_signal_test(site_data, data_interp, vars_to_test, attenuated_signal_thresholds, time_window, time_interval)
-    site_data = dynamic_attenuated_test(site_data, data_interp, vars_to_test, attenuated_signal_thresholds)
+    site_rollingSD = calc_rolling_sd(site_data_interp, vars_to_test, time_interval, sd_window_hrs=time_window_attsig, min_non_na = 20)
+    site_data = dynamic_attenuated_test(site_data, site_rollingSD, vars_to_test, attenuated_signal_thresholds)
     
     results_list[[i]] = site_data
   }
