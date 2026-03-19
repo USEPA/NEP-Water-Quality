@@ -622,7 +622,7 @@ attenuated_signal_test = function(data, data_interp, vars_to_test, attenuated_si
 # _________________________________________________________ #
 ### QAQC Function (calls individual test functions)####
 # _________________________________________________________ #
-qaqc_nep = function(data, columns_to_qa, user_thresholds, sensor_thresholds, spike_thresholds, seasonal_thresholds, time_window,
+qaqc_nep = function(data, vars_to_test, user_thresholds, sensor_thresholds, spike_thresholds, seasonal_thresholds, time_window,
                     time_interval, attenuated_signal_thresholds, time_window_attsig=12 , num_sd_for_rate_change, num_flatline_sus, num_flatline_fail, flatline_thresholds) {
 # METADATA: ####
 # Applies QARTOD testing across a single data-frame, assuming all data within the data-frame corresponds to a single NEP
