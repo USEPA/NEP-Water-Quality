@@ -1,7 +1,7 @@
 # Andrew Mandovi
 # ORISE EPA - Office of Research and Development, Pacific Coastal Ecology Branch, Newport, OR
 # Originally created: Mar 5, 2025
-# Last updated: Jun 23, 2025
+# Last updated: Apr 10, 2025
 # -------------------------------------------------------------------------------
 # From this script, the user may run the entire QA-QC process for each NEP included here which has a file within the same directory
 #
@@ -61,21 +61,31 @@ cat('Starting QA Process... Loading main QA .R script... \n')
 # start_time = Sys.time()
 source('qaqc_NEP_main.R')
 
-#Barnegat:
+# Barnegat:
 source('qaqc_NEP_Barnegat.R')
 cat('Barnegat Bay QA process complete. \n')
 
-#Casco:
+# Casco:
 source('qaqc_NEP_Casco.R')
 cat('Casco Bay QA process complete. \n')
 
-#Pensacola:
+# Pensacola:
 source('qaqc_NEP_Pensacola.R')
 cat('Pensacola Bay QA process complete. \n')
 
-#Delaware:
+# Delaware:
 source('qaqc_NEP_Delaware.R')
 cat('Delaware Inland Bays QA process complete. \n')
+
+# San Francisco:
+source('sf_master.R')
+cat('San Francisco Bay QA Process complete. \n')
+
+############################ Save Data to O:Drive ################################
+timestamp <- format(Sys.time(), "%Y%m%d-%H%M")
+save(nep_unfiltered_data,file=paste0("O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_unfiltered_data_",timestamp,".Rdata"))
+save(nep_filtered_data,file=paste0("O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_filtered_data_",timestamp,".Rdata"))
+##################################################################################
 
 end_time = Sys.time()
 time_taken = end_time - start_time
