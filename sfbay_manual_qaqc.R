@@ -134,7 +134,7 @@ nep_filtered_data$SanFrancisco = sf_filtered_new
     # flags_2026 = our automated flagging system
     # flags_manual = flags_2026 + our manual review
 sf_simplified = sf_recombined_new %>% 
-  select(datetime_utc, ph, sal_ppt, temp_c, do_mgl, flags, flags_2026, flag_manual)
+  select(datetime_utc, ph, sal_ppt, temp_c, do_mgl, site_code, flags, flags_2026, flag_manual)
 
 # 5.1) Save simplified data frame to CSV
 write_csv(sf_simplified, 'NEP_SF_manualRevision.csv')
