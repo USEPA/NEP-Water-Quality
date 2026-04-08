@@ -50,8 +50,13 @@ Odrive_data_path = 'O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP
 load(paste0(Odrive_data_path,'nep_unfiltered_data_20260107-165206.Rdata'))
 load(paste0(Odrive_data_path,'nep_filtered_data_20260107-165206.Rdata'))
 
+# POST-PROCESSED DATA:
+load(paste0(Odrive_data_path,'nep_unfiltered_data_20260406-1106.Rdata'))
+load(paste0(Odrive_data_path,'nep_filtered_data_20260406-1106.Rdata'))
+
+
 # Set Working Directory: Adjust to local 
-setwd(local_R_path)
+setwd(SF_R_path)
 
 # Check if column names are using _ or . --> adjust to '.' temporarily 
 if (any(grepl('\\_', colnames(nep_unfiltered_data$SanFrancisco)))) {
