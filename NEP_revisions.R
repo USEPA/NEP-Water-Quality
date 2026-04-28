@@ -856,6 +856,16 @@ pass_data_list_revision$Tillamook = pass_data_list_revision$Tillamook %>%
 ## RENAME revised qa_data_list_revision and pass_data_list_revision #########################################
 
 nep_unfiltered_data = qa_data_list_revision # qa_data_list_revision is now nep_unfiltered_data
+nep_unfiltered_data$LongIslandSound = nep_unfiltered_data$LongIslandSound %>% 
+  filter(datetime_utc > cutoff_date)
+nep_unfiltered_data$Mobile = nep_unfiltered_data$Mobile %>% 
+  filter(datetime_utc > cutoff_date)
+nep_unfiltered_data$Narragansett = nep_unfiltered_data$Narragansett %>% 
+  filter(datetime_utc > cutoff_date)
+nep_unfiltered_data$NYNJH = nep_unfiltered_data$NYNJH %>% 
+  filter(datetime_utc > cutoff_date)
+nep_unfiltered_data$SanFrancisco = nep_unfiltered_data$SanFrancisco %>% 
+  filter(datetime_utc > cutoff_date)
 nep_filtered_data = pass_data_list_revision # pass_data_list_revision is now nep_filtered_data
 
 ################################################################################
