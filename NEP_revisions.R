@@ -143,26 +143,16 @@ qa_data_list$IndianRiverLagoon$flags_revision <- qa_data_list$IndianRiverLagoon$
 #Comment: co2.ppm values >1,000,000 flagged as good
 #Revision: Flag co2.ppm values > 3,000 as suspect, verified with Kristen Davis 1/7/26
 # ---- AWM: 12.11.25 re-wrote the following section to use dplyr: ----
-qa_data_list$IndianRiverLagoon = qa_data_list$IndianRiverLagoon %>% 
-  mutate(flags_revision = if_else(
-    co2.ppm > 3000 & flags == 1, # if co2 > 3000 ppm & flags == 1...
-    2,                           # then: make flags_revision = 2
-    flags_revision               # else: keep the same
-  )) %>% 
-  #Comment: 10/18/2022 12:00 do.mgl of 44.42 flagged as good
-  #Revision: Flagging do.mgl values > 20 as suspect "2"
-  mutate(flags_revision = if_else(
-    do.mgl > 20 & flags == 1,
-    2,
-    flags_revision
-  )) %>% 
-  #Comment: Sal.ppt values ~66 flagged as good
-  #Revision: Salinity data > 40 should be flagged as suspect according to 7/9/25 email from Kristen Davis
-  mutate(flags_revision = if_else(
-    sal.ppt > 40 & flags == 1,
-    2,
-    flags_revision
-  ))
+# AWM Updated 4.29.26 to fix an error that propagated NAs into the flags_revision column
+qa_data_list$IndianRiverLagoon <- qa_data_list$IndianRiverLagoon %>%
+  mutate(
+    flags_revision = case_when(
+      flags == 1 & coalesce(co2_ppm, -Inf) > 3000 ~ 2L,
+      flags == 1 & coalesce(do_mgl,  -Inf) >   20 ~ 2L,
+      flags == 1 & coalesce(sal_ppt, -Inf) >   40 ~ 2L,
+      TRUE ~ flags
+    )
+  )
 # ---- AWM: end 12.11.25 edited block ----
 
 #Comment: large number of do.mgl values at 0.00, these are flagged as good
