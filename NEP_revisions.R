@@ -842,7 +842,18 @@ pass_data_list_revision$Tillamook = pass_data_list_revision$Tillamook %>%
     )
   )
 
+df <- df %>%
+  mutate(
+    max_flag = do.call(pmax, c(across(starts_with("flags_")), na.rm = TRUE)),
+    max_flag = na_if(max_flag, -Inf)  # if a row had only NA, make it NA
+  )
 
+# AWM 4.29.26: Added 'flags_revision' column for Tillamook: previously no cumulative flag column
+nep_unfiltered_data$Tillamook <- nep_unfiltered_data$Tillamook %>%
+  mutate(
+    flags_revision = do.call(pmax, c(across(starts_with("flags_")), na.rm = TRUE)),
+    flags_revision = na_if(flags_revision, -Inf)  # if a row had only NA, make it NA
+  )
 ## RENAME revised qa_data_list_revision and pass_data_list_revision #########################################
 
 nep_unfiltered_data = qa_data_list_revision # qa_data_list_revision is now nep_unfiltered_data
