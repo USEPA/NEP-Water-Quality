@@ -386,6 +386,31 @@ qa_data_list$PugetSound$flags_revision <- qa_data_list$PugetSound$flags
 #Comment:	sal.ppt vs. alk.umolkg, sal.ppt vs. DIC_UMOL_KG, do.mgl vs. pco2.ppm regressions all look good.
 #Revision: No change needed
 
+# AWM May 4 2026: flags_revision updated to accurately reflect all relevant flag data
+flag_cols <- c("CTDTMP_FLAG_W", "CTDSAL_FLAG_W", "RECOMMENDED_OXYGEN_FLAG_W",
+               "TA_FLAG_W", "DIC_FLAG_W")
+qa_data_list$PugetSound <- qa_data_list$PugetSound %>%
+  # Map each flag to the desired scale
+  mutate(across(all_of(flag_cols),
+                ~ case_when(
+                  .x == 2 ~ 1L,
+                  .x == 3 ~ 2L,
+                  .x == 4 ~ 3L,
+                  .x %in% c(5, 6, 9) ~ 0L,
+                  TRUE ~ NA_integer_
+                ),
+                .names = "{.col}__mapped")) %>%
+  # Row-wise max of mapped flags (worst)
+  rowwise() %>%
+  mutate(flags_revision = {
+    v <- c_across(ends_with("__mapped"))
+    m <- max(v, na.rm = TRUE)
+    if (is.infinite(m)) NA_integer_ else m
+  }) %>%
+  ungroup() %>%
+  # Drop the temporary mapped columns
+  select(-ends_with("__mapped"))
+
 
 ################################################################################
 ################################################################################
