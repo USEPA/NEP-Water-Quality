@@ -7,7 +7,7 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 #                    INSTRUCTIONS FOR USER: 
 #                    ----------------------
-#  1. Define parameters and thresholds unique to Carquinez (SF) before running 
+#  1. Define parameters and thresholds unique to Carquinez (CMA) before running 
 #  2. Runs qaqc script for Carquinez
 #  3. Save the results (optional)
 # 
