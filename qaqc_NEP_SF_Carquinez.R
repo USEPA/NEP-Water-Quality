@@ -7,8 +7,8 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 #                    INSTRUCTIONS FOR USER: 
 #                    ----------------------
-#  1. Define parameters and thresholds unique to CASCO BAY before running 
-#  2. Runs qaqc script for CASCO BAY
+#  1. Define parameters and thresholds unique to Carquinez (SF) before running 
+#  2. Runs qaqc script for Carquinez
 #  3. Save the results (optional)
 # 
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
