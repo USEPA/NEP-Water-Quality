@@ -7,8 +7,8 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 #                    INSTRUCTIONS FOR USER: 
 #                    ----------------------
-#  1. Define parameters and thresholds unique to CASCO BAY before running 
-#  2. Runs qaqc script for CASCO BAY
+#  1. Define parameters and thresholds unique to Tiburon (EOS) before running 
+#  2. Runs qaqc script for Tiburon
 #  3. Save the results (optional)
 # 
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
