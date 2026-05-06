@@ -143,16 +143,26 @@ qa_data_list$IndianRiverLagoon$flags_revision <- qa_data_list$IndianRiverLagoon$
 #Comment: co2.ppm values >1,000,000 flagged as good
 #Revision: Flag co2.ppm values > 3,000 as suspect, verified with Kristen Davis 1/7/26
 # ---- AWM: 12.11.25 re-wrote the following section to use dplyr: ----
-# AWM Updated 4.29.26 to fix an error that propagated NAs into the flags_revision column
-qa_data_list$IndianRiverLagoon <- qa_data_list$IndianRiverLagoon %>%
-  mutate(
-    flags_revision = case_when(
-      flags == 1 & coalesce(co2_ppm, -Inf) > 3000 ~ 2L,
-      flags == 1 & coalesce(do_mgl,  -Inf) >   20 ~ 2L,
-      flags == 1 & coalesce(sal_ppt, -Inf) >   40 ~ 2L,
-      TRUE ~ flags
-    )
-  )
+qa_data_list$IndianRiverLagoon = qa_data_list$IndianRiverLagoon %>% 
+  mutate(flags_revision = if_else(
+    co2.ppm > 3000 & flags == 1, # if co2 > 3000 ppm & flags == 1...
+    2,                           # then: make flags_revision = 2
+    flags_revision               # else: keep the same
+  )) %>% 
+  #Comment: 10/18/2022 12:00 do.mgl of 44.42 flagged as good
+  #Revision: Flagging do.mgl values > 20 as suspect "2"
+  mutate(flags_revision = if_else(
+    do.mgl > 20 & flags == 1,
+    2,
+    flags_revision
+  )) %>% 
+  #Comment: Sal.ppt values ~66 flagged as good
+  #Revision: Salinity data > 40 should be flagged as suspect according to 7/9/25 email from Kristen Davis
+  mutate(flags_revision = if_else(
+    sal.ppt > 40 & flags == 1,
+    2,
+    flags_revision
+  ))
 # ---- AWM: end 12.11.25 edited block ----
 
 #Comment: large number of do.mgl values at 0.00, these are flagged as good
@@ -331,6 +341,7 @@ qa_data_list$SanFrancisco$flags_revision[bad_test] <- 2 #Flag data as suspect
 ##### Tampa ###############################################
 
 qa_data_list$Tampa$flags_revision <- qa_data_list$Tampa$flags
+
 
 #Comment: Are flags 1 and 15 interchangeable? Reasonable values for sal.ppt, do.mgl, and ph.tot are flagged as both 1 and 15.
 
@@ -684,7 +695,7 @@ for (i in 1:nrow(morro_biofoul_processed)) {
 ###########    Additional Edits by Andrew, Dec 11-16 2025     #################
 ###############################################################################
 
-####### Update column names for all NEPs replace '.' with '_' in column headers, for easier use across R/Python/Matlab ######
+####### Update column names for all NEPs when necessary to eliminate '.' in names, for easier use across R/Python/Matlab ######
 colnames(qa_data_list_revision$Barnegat) = gsub('.','_',colnames(qa_data_list_revision$Barnegat), fixed=TRUE)
 colnames(pass_data_list_revision$Barnegat) = gsub('.','_',colnames(pass_data_list_revision$Barnegat), fixed=TRUE)
 colnames(qa_data_list_revision$Cascobay) = gsub('.','_',colnames(qa_data_list_revision$Cascobay), fixed=TRUE)
@@ -867,18 +878,8 @@ pass_data_list_revision$Tillamook = pass_data_list_revision$Tillamook %>%
     )
   )
 
-df <- df %>%
-  mutate(
-    max_flag = do.call(pmax, c(across(starts_with("flags_")), na.rm = TRUE)),
-    max_flag = na_if(max_flag, -Inf)  # if a row had only NA, make it NA
-  )
+nep_filtered_data = pass_data_list_revision # pass_data_list_revision is now nep_filtered_data
 
-# AWM 4.29.26: Added 'flags_revision' column for Tillamook: previously no cumulative flag column
-nep_unfiltered_data$Tillamook <- nep_unfiltered_data$Tillamook %>%
-  mutate(
-    flags_revision = do.call(pmax, c(across(starts_with("flags_")), na.rm = TRUE)),
-    flags_revision = na_if(flags_revision, -Inf)  # if a row had only NA, make it NA
-  )
 ## RENAME revised qa_data_list_revision and pass_data_list_revision #########################################
 
 nep_unfiltered_data = qa_data_list_revision # qa_data_list_revision is now nep_unfiltered_data
@@ -892,11 +893,18 @@ nep_unfiltered_data$NYNJH = nep_unfiltered_data$NYNJH %>%
   filter(datetime_utc > cutoff_date)
 nep_unfiltered_data$SanFrancisco = nep_unfiltered_data$SanFrancisco %>% 
   filter(datetime_utc > cutoff_date)
-nep_filtered_data = pass_data_list_revision # pass_data_list_revision is now nep_filtered_data
+
+
+nep_unfiltered_data$Tampa = nep_unfiltered_data$Tampa %>% 
+  mutate(across(c(temp_c,depth_m,sal_ppt,ph_tot,co2_ppm,pres_mbar,do_mgl), ~ na_if(.x, -99)))
+nep_filtered_data$Tampa= nep_filtered_data$Tampa %>% 
+  mutate(across(c(temp_c,depth_m,sal_ppt,ph_tot,co2_ppm,pres_mbar,do_mgl), ~ na_if(.x, -99)))
+
+
 
 ################################################################################
 # # # # Save Data: # # # #
-timestamp <- format(Sys.time(), "%Y%m%d-%H%M")
+timestamp <- format(Sys.time(), "%Y%m%d-%H%M%S")
 #save(nep_unfiltered_data,file="O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_unfiltered_data.Rdata")
 #save(nep_filtered_data,file="O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_filtered_data.Rdata")
 save(nep_unfiltered_data,file=paste0("O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_unfiltered_data_",timestamp,".Rdata"))
@@ -904,8 +912,6 @@ save(nep_filtered_data,file=paste0("O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidificatio
 
 # save(qa_data_list_revision,file="C:/Users/spacella/OneDrive - Environmental Protection Agency (EPA)/NEP OA standards analysis/qa_data_list_revision.Rdata")
 # save(pass_data_list_revision,file="C:/Users/spacella/OneDrive - Environmental Protection Agency (EPA)/NEP OA standards analysis/pass_data_list_revision.Rdata")
-
-
 
 
 
