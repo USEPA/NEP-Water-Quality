@@ -191,28 +191,45 @@ qa_data_list$LongIslandSound$flags_revision <- qa_data_list$LongIslandSound$flag
 #Revision: Data aleady delivered post-QC; no revision needed
 
 # ---- AWM: 12.11.25 re-wrote the following section to use dplyr: ----
+
 #Comment: Large number of unreasonably low ph and ph.T values
 #Revision: Flag pH values <6 and >9 as suspect "2"
+# qa_data_list$LongIslandSound = qa_data_list$LongIslandSound %>% 
+#   mutate(flags_revision = if_else(
+#     ph.T < 6 & flags == 1,
+#     2,
+#     flags_revision
+#   )) %>% 
+#   mutate(flags_revision = if_else(
+#     ph.T > 9 & flags == 1,
+#     2,
+#     flags_revision
+#   )) %>% 
+# #Comment: Large number of negative do.mgl values
+# #Revision: Flag do.mgl values <0 as suspect
+#   mutate(flags_revision = if_else(
+#     do.mgl < 0 & flags == 1,
+#     2,
+#     flags_revision
+#   ))
+# # ---- AWM: end 12.11.25 edited block ----
+# ---- AWM 5.8.2026 ----
+# Adjusted above if_else() into case_when():
 qa_data_list$LongIslandSound = qa_data_list$LongIslandSound %>% 
-  mutate(flags_revision = if_else(
-    ph.T < 6 & flags == 1,
-    2,
-    flags_revision
-  )) %>% 
-  mutate(flags_revision = if_else(
-    ph.T > 9 & flags == 1,
-    2,
-    flags_revision
-  )) %>% 
-#Comment: Large number of negative do.mgl values
-#Revision: Flag do.mgl values <0 as suspect
-  mutate(flags_revision = if_else(
-    do.mgl < 0 & flags == 1,
-    2,
-    flags_revision
-  ))
-# ---- AWM: end 12.11.25 edited block ----
+  mutate(
+    flags_revision = case_when(
+      flags == 1 & ph.T < 6 ~ 2,
+      flags == 1 & ph.T > 9 ~ 2,
+      flags == 1 & do.mgl < 0 ~ 2,
+      flags == 1 & sal.ppt > 40 ~ 2,
+      TRUE ~ flags
+    )
+  )
 
+# Adjust datetime.est to properly reflect EST time (rather than mirroring UTC time)
+qa_data_list$LongIslandSound = qa_data_list$LongIslandSound %>% 
+  mutate(datetime_est = with_tz(datetime_utc, tzone = "America/New_York"))
+# --- End AWM 5.8.26 edited block ---
 
 ##### Mobile Bay ###############################################
 
@@ -341,7 +358,11 @@ qa_data_list$SanFrancisco$flags_revision[bad_test] <- 2 #Flag data as suspect
 ##### Tampa ###############################################
 
 qa_data_list$Tampa$flags_revision <- qa_data_list$Tampa$flags
-
+qa_data_list$Tampa = qa_data_list$Tampa %>% 
+  mutate(ph.T = case_when(
+    ph.T < 0 ~ NA_real_,
+    TRUE ~ ph.T
+  ))
 
 #Comment: Are flags 1 and 15 interchangeable? Reasonable values for sal.ppt, do.mgl, and ph.tot are flagged as both 1 and 15.
 
@@ -897,9 +918,24 @@ nep_unfiltered_data$SanFrancisco = nep_unfiltered_data$SanFrancisco %>%
 
 nep_unfiltered_data$Tampa = nep_unfiltered_data$Tampa %>% 
   mutate(across(c(temp_c,depth_m,sal_ppt,ph_tot,co2_ppm,pres_mbar,do_mgl), ~ na_if(.x, -99)))
-nep_filtered_data$Tampa= nep_filtered_data$Tampa %>% 
+nep_filtered_data$Tampa = nep_unfiltered_data$Tampa %>% 
+  filter(flags_revision == 1)
+nep_filtered_data$Tampa = nep_filtered_data$Tampa %>% 
   mutate(across(c(temp_c,depth_m,sal_ppt,ph_tot,co2_ppm,pres_mbar,do_mgl), ~ na_if(.x, -99)))
 
+
+nep_unfiltered_data$LongIslandSound = nep_unfiltered_data$LongIslandSound %>% 
+  mutate(
+    flags_revision = case_when(
+      flags == 1 & ph_T < 6 ~ 2,
+      flags == 1 & ph_T > 9 ~ 2,
+      flags == 1 & do_mgl < 0 ~ 2,
+      flags == 1 & sal_ppt > 40 ~ 2,
+      TRUE ~ flags
+    )
+  )
+nep_filtered_data$LongIslandSound = nep_unfiltered_data$LongIslandSound %>% 
+  filter(flags_revision == 1)
 
 
 ################################################################################
