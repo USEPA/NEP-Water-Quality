@@ -21,7 +21,7 @@ cat('Processing NEP: Delaware Inland Bay \n')
 # For Gross-Range Test:
 ph_user_min = 7
 ph_user_max = 10
-temp_user_min = 10
+temp_user_min = 0
 temp_user_max = 35
 sal_user_min = 1
 sal_user_max = 30
