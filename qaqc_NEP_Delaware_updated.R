@@ -22,7 +22,7 @@ cat('Processing NEP: Delaware Inland Bay \n')
 ph_user_min = 7
 ph_user_max = 10
 temp_user_min = 0
-temp_user_max = 35
+temp_user_max = 40
 sal_user_min = 1
 sal_user_max = 30
 co2_user_min = 100
@@ -143,6 +143,16 @@ qa_delaware = qa_delaware %>%
          temp_flag = do.call(pmax,c(select(qa_delaware, ends_with('_temp.c')),na.rm=TRUE)),
          sal_flag = do.call(pmax,c(select(qa_delaware, ends_with('_sal.ppt')),na.rm=TRUE))
   )
+
+qa_delaware = qa_delaware %>% select(-co2.ppm)
+
+qa_delaware = qa_delaware %>% 
+  rename_with(~ gsub('.','_',.x, fixed=TRUE))
+
+qa_delaware = qa_delaware %>% mutate(flags_revision = flags)
+
+qa_delaware_filtered = qa_delaware %>% 
+  filter(flags == 1)
 
 # qa_data_list$DelawareInland = delaware_combined
 # qa_data_list$DelawareInland = qa_data_list$DelawareInland |> 
