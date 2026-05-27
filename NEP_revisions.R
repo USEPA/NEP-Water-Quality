@@ -937,9 +937,92 @@ nep_unfiltered_data$LongIslandSound = nep_unfiltered_data$LongIslandSound %>%
 nep_filtered_data$LongIslandSound = nep_unfiltered_data$LongIslandSound %>% 
   filter(flags_revision == 1)
 
+############## Adding DO Saturation to NEPs lacking it: #####
+# --- Calculating percent DO saturation ----
+# 1. define Benson & Krause solubility function
+calculate_do_sat = function(temp, sal) {
+  # convert C to K
+  tk = temp + 273.15
+  
+  # calculate freshwater baseline ln(DO_0)
+  ln_do_0 <- -139.34411 + 
+    (1.575701e5 / tk) - 
+    (6.642308e7 / (tk^2)) + 
+    (1.243800e10 / (tk^3)) - 
+    (8.621949e11 / (tk^4))
+  do_0 <- exp(ln_do_0)
+  
+  # calculate salinity correction factor
+  salinity_factor <- exp(-sal * (0.017674 - (10.754/tk) + (2140.7/(tk^2))))
+  
+  # return theoretical DO saturation limit
+  return(do_0*salinity_factor)
+}
+# Applying to NEPs:
+# unfiltered data:
+nep_unfiltered_data$IndianRiverLagoon = nep_unfiltered_data$IndianRiverLagoon %>% 
+  mutate(do_sat_limit = calculate_do_sat(temp_c,sal_ppt),
+         do_pct = (do_mgl/do_sat_limit)*100
+  )
+nep_unfiltered_data$LongIslandSound = nep_unfiltered_data$LongIslandSound %>% 
+  mutate(do_sat_limit = calculate_do_sat(temp_c,sal_ppt),
+         do_pct = (do_mgl/do_sat_limit)*100
+  )
+nep_unfiltered_data$Morro = nep_unfiltered_data$Morro %>% 
+  mutate(do_sat_limit = calculate_do_sat(temp_c,sal_ppt),
+         do_pct = (do_mgl/do_sat_limit)*100
+  )
+nep_unfiltered_data$Narragansett = nep_unfiltered_data$Narragansett %>% 
+  mutate(do_sat_limit = calculate_do_sat(temp_c,sal_ppt),
+         do_pct = (do_mgl/do_sat_limit)*100
+  )
+nep_unfiltered_data$PugetSound = nep_unfiltered_data$PugetSound %>% 
+  mutate(do_sat_limit = calculate_do_sat(temp_c,sal_ppt),
+         do_pct = (do_mgl/do_sat_limit)*100
+  )
+nep_unfiltered_data$SanFrancisco = nep_unfiltered_data$SanFrancisco %>% 
+  mutate(do_sat_limit = calculate_do_sat(temp_c,sal_ppt),
+         do_pct = (do_mgl/do_sat_limit)*100
+  )
+nep_unfiltered_data$Tampa = nep_unfiltered_data$Tampa %>% 
+  mutate(do_sat_limit = calculate_do_sat(temp_c,sal_ppt),
+         do_pct = (do_mgl/do_sat_limit)*100
+  )
+# filtered data:
+nep_filtered_data$IndianRiverLagoon = nep_filtered_data$IndianRiverLagoon %>% 
+  mutate(do_sat_limit = calculate_do_sat(temp_c,sal_ppt),
+         do_pct = (do_mgl/do_sat_limit)*100
+  )
+nep_filtered_data$LongIslandSound = nep_filtered_data$LongIslandSound %>% 
+  mutate(do_sat_limit = calculate_do_sat(temp_c,sal_ppt),
+         do_pct = (do_mgl/do_sat_limit)*100
+  )
+nep_filtered_data$Morro = nep_filtered_data$Morro %>% 
+  mutate(do_sat_limit = calculate_do_sat(temp_c,sal_ppt),
+         do_pct = (do_mgl/do_sat_limit)*100
+  )
+nep_filtered_data$Narragansett = nep_filtered_data$Narragansett %>% 
+  mutate(do_sat_limit = calculate_do_sat(temp_c,sal_ppt),
+         do_pct = (do_mgl/do_sat_limit)*100
+  )
+nep_filtered_data$PugetSound = nep_filtered_data$PugetSound %>% 
+  mutate(do_sat_limit = calculate_do_sat(temp_c,sal_ppt),
+         do_pct = (do_mgl/do_sat_limit)*100
+  )
+nep_filtered_data$SanFrancisco = nep_filtered_data$SanFrancisco %>% 
+  mutate(do_sat_limit = calculate_do_sat(temp_c,sal_ppt),
+         do_pct = (do_mgl/do_sat_limit)*100
+  )
+nep_filtered_data$Tampa = nep_filtered_data$Tampa %>% 
+  mutate(do_sat_limit = calculate_do_sat(temp_c,sal_ppt),
+         do_pct = (do_mgl/do_sat_limit)*100
+  )
 
 ################################################################################
+nep_unfiltered_data$Tillamook = nep_unfiltered_data$Tillamook %>% mutate(lat = 45.5538, lon = -123.9159)
+nep_filtered_data$Tillamook = nep_filtered_data$Tillamook %>% mutate(lat = 45.5538, lon = -123.9159)
 # # # # Save Data: # # # #
+timestamp = '20260508-161829'
 timestamp <- format(Sys.time(), "%Y%m%d-%H%M%S")
 #save(nep_unfiltered_data,file="O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_unfiltered_data.Rdata")
 #save(nep_filtered_data,file="O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_filtered_data.Rdata")
