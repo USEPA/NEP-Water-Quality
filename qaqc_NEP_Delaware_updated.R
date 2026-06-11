@@ -19,7 +19,7 @@ cat('Processing NEP: Delaware Inland Bay \n')
 ##### Step 1. PARAMETERIZATION: Edit these prior to running, customized for the specific NEP site/region: ####
 
 # For Gross-Range Test:
-ph_user_min = 7
+ph_user_min = 6
 ph_user_max = 10
 temp_user_min = 0
 temp_user_max = 40
