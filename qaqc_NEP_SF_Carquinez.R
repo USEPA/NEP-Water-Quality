@@ -7,8 +7,8 @@
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 #                    INSTRUCTIONS FOR USER: 
 #                    ----------------------
-#  1. Define parameters and thresholds unique to Carquinez (CMA) before running 
-#  2. Runs qaqc script for Carquinez
+#  1. Define parameters and thresholds unique to CASCO BAY before running 
+#  2. Runs qaqc script for CASCO BAY
 #  3. Save the results (optional)
 # 
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -40,8 +40,8 @@ co2_sensor_max = 3500
 do_sensor_min = 0
 do_sensor_max = 50
 # for Spike Test:
-spike_low_ph = 0.25
-spike_high_ph = 0.5
+spike_low_ph = 0.15
+spike_high_ph = 0.25
 spike_low_temp = 1
 spike_high_temp = 2
 spike_low_sal = 5
