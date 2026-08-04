@@ -130,6 +130,9 @@ qa_barnegat = qa_barnegat %>%
                sal_flag = do.call(pmax,c(select(qa_barnegat, ends_with('_sal.ppt')),na.rm=TRUE))
          )
 
+# replace '.' in column names with '_' for ease of transition between R, Matlab, Python:
+colnames(qa_barnegat) = gsub('.','_',colnames(qa_barnegat), fixed=TRUE) 
+
 # qa_data_list$Barnegat = qa_barnegat
 # qa_data_list$Barnegat = qa_data_list$Barnegat |> 
 #   mutate(ph_flag = do.call(pmax, c(select(qa_data_list$Barnegat, ends_with('_ph')),na.rm=TRUE)),
