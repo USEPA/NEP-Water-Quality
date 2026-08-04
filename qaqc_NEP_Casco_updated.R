@@ -1,7 +1,7 @@
 # Andrew Mandovi
 # ORISE EPA - Office of Research and Development, Pacific Coastal Ecology Branch, Newport, OR
 # Originally created: Jan 23, 2025
-# DATE OF LAST UPDATE: Apr 28, 2026 
+# DATE OF LAST UPDATE: Aug 4, 2026 
 # Updated by: Andrew Mandovi 
 
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -128,6 +128,9 @@ qa_casco = qa_casco %>%
          temp_flag = do.call(pmax,c(select(qa_casco, ends_with('_temp.c')),na.rm=TRUE)),
          sal_flag = do.call(pmax,c(select(qa_casco, ends_with('_sal.ppt')),na.rm=TRUE))
   )
+
+# replace '.' in column names with '_' for ease of transition between R, Matlab, Python:
+colnames(qa_casco) = gsub('.','_',colnames(qa_casco), fixed=TRUE) 
 
 # qa_data_list$Cascobay = qa_casco
 # qa_data_list$Cascobay = qa_data_list$Cascobay |> 
