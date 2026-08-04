@@ -1,7 +1,7 @@
 # Andrew Mandovi
 # ORISE EPA - Office of Research and Development, Pacific Coastal Ecology Branch, Newport, OR
 # Originally created: June 9, 2025
-# DATE OF LAST UPDATE: Apr 28, 2026 
+# DATE OF LAST UPDATE: Aug 4, 2026 
 # Updated by: Andrew Mandovi 
 
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -153,6 +153,9 @@ qa_delaware = qa_delaware %>% mutate(flags_revision = flags)
 
 qa_delaware_filtered = qa_delaware %>% 
   filter(flags == 1)
+
+# replace '.' in column names with '_' for ease of transition between R, Matlab, Python:
+colnames(qa_delaware) = gsub('.','_',colnames(qa_delaware), fixed=TRUE) 
 
 # nep_unfiltered_data$DelawareInland = qa_delaware
 # nep_filtered_data$DelawareInland = qa_delaware_filtered
