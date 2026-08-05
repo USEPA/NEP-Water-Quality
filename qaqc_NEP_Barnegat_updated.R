@@ -133,6 +133,8 @@ qa_barnegat = qa_barnegat %>%
 # replace '.' in column names with '_' for ease of transition between R, Matlab, Python:
 colnames(qa_barnegat) = gsub('.','_',colnames(qa_barnegat), fixed=TRUE) 
 
+qa_barnegat$flags_revision = qa_barnegat$flags
+
 # qa_data_list$Barnegat = qa_barnegat
 # qa_data_list$Barnegat = qa_data_list$Barnegat |> 
 #   mutate(ph_flag = do.call(pmax, c(select(qa_data_list$Barnegat, ends_with('_ph')),na.rm=TRUE)),
