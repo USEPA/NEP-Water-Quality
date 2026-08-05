@@ -82,7 +82,7 @@ flatline_thresholds = c(
 attenuated_signal_thresholds = list(
   ph = list(sus = 0.005, fail = 0.001),  # suspect if variability < 15%, fail if < 5%
   temp.c = list(sus=0.05, fail = 0.02),
-  sal.ppt = list(sus = 0.15, fail = 0.05),
+  sal.ppt = list(sus = 0.05, fail = 0.02),
   do.mgl = list(sus = 0.05, fail = 0.02)
 )
 time_window_attsig = 12  # Time (in hours) to look back across to compare the signal against (default = 24-hours)
@@ -132,8 +132,6 @@ qa_barnegat = qa_barnegat %>%
 
 # replace '.' in column names with '_' for ease of transition between R, Matlab, Python:
 colnames(qa_barnegat) = gsub('.','_',colnames(qa_barnegat), fixed=TRUE) 
-
-qa_barnegat$flags_revision = qa_barnegat$flags
 
 # qa_data_list$Barnegat = qa_barnegat
 # qa_data_list$Barnegat = qa_data_list$Barnegat |> 

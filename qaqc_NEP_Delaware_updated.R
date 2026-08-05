@@ -82,9 +82,9 @@ flatline_thresholds = c(
 # these values dictate the exceedence thresholds to which the standard deviation over the previous 12-hour period would FAIL or be SUSPECT if they do not exceed them 
 # similar to a flat-line test, it tests for near-flat-line scenarios, where a signal is overly dampened by an external factor
 attenuated_signal_thresholds = list(
-  ph = list(sus = 0.005, fail = 0.001),  # suspect if variability < 15%, fail if < 5%
+  ph = list(sus = 0.005, fail = 0.001),  # 0.5% and 0.1% standard deviation
   temp.c = list(sus=0.05, fail = 0.02),
-  sal.ppt = list(sus = 0.15, fail = 0.05),
+  sal.ppt = list(sus = 0.05, fail = 0.02),
   do.mgl = list(sus = 0.05, fail = 0.02)
 )
 time_window_attsig = 12  # Time (in hours) to look back across to compare the signal against (default = 24-hours)
