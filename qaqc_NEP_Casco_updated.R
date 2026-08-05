@@ -132,6 +132,8 @@ qa_casco = qa_casco %>%
 # replace '.' in column names with '_' for ease of transition between R, Matlab, Python:
 colnames(qa_casco) = gsub('.','_',colnames(qa_casco), fixed=TRUE) 
 
+qa_casco$flags_revision = qa_casco$flags
+
 # qa_data_list$Cascobay = qa_casco
 # qa_data_list$Cascobay = qa_data_list$Cascobay |> 
 #   mutate(ph_flag = do.call(pmax, c(select(qa_data_list$Cascobay, ends_with('_ph')),na.rm=TRUE)),
