@@ -100,58 +100,372 @@ spike_test = function(site_data, vars_to_test, spike_thresholds) {
   return(data)
 }
 
-# NEW Flatline Test 2.0 ########
+# Flatline Test 3.2 - Faster version than 3.1. [WORKS - fast!]
 flatline_test = function(site_data, vars_to_test, num_flatline_sus, num_flatline_fail, flatline_thresholds) {
-  # Tests NEP data for consecutive unchanging values
-  #  0 - Test not ran
-  #  0.5 - Insufficient data
-  #  1 - Pass
-  #  2 - Suspect
-  #  3 - Fail
-  SUS_NUM = num_flatline_sus 
-  FAIL_NUM = num_flatline_fail 
-  data = site_data 
+  # start_time = Sys.time()
+  if (!requireNamespace("data.table", quietly = TRUE)) {
+    stop("Package 'data.table' is required for this version.")
+  }
+  
+  library(data.table)
+  
+  # Convert to data.table and drop rows with missing timestamps
+  data = as.data.table(site_data)
+  data = data[!is.na(datetime.utc)]
+  setorder(data, datetime.utc)
+  
+  sus_hours  = num_flatline_sus
+  fail_hours = num_flatline_fail
+  
+  n = nrow(data)
   
   for (var in vars_to_test) {
     current_tol = flatline_thresholds[[var]]
+    
     if (exists("progress_print_option") && tolower(progress_print_option) %in% c('y','yes')) {
       print(paste('Processing flatline for:', var, '| Threshold:', current_tol, '| at', Sys.time()))
     }
-    # We create a temporary column to calculate the run lengths
-    # consecutive_id increments every time the value changes beyond the tolerance
-    data = data %>% 
-      mutate(
-        # identify where the value changes more than the tolerance
-        diff_val = c(0,abs(diff(.data[[var]]))),
-        is_break = if_else(diff_val > current_tol | is.na(diff_val), 1, 0),
-        run_id = cumsum(is_break)
-      ) %>% 
-      group_by(run_id) %>% 
-      mutate(
-        total_run_len = n(),
-        # apply flag logic to whole group
-        flag_val = case_when(
-          # global_row_idx < 5 ~ 0.5, # insufficient data
-          is.na(.data[[var]]) ~ 0,
-          total_run_len >= FAIL_NUM ~ 3,
-          total_run_len >= SUS_NUM ~ 2,
-          TRUE ~ 1
-          )
-        ) %>% 
-      ungroup()
-    # Apply the "insufficient data" flag (0.5) to the first 4 rows globally
-    data = data %>% 
-      mutate(flag_val = if_else(row_number() < 5, 0.5, flag_val))
-    # assign to final column name
-    data[[paste0('test.Flatline_',var)]] = data$flag_val
-    # clean up temporary columns
-    data = data %>% select(-diff_val, -is_break, -run_id, -total_run_len, -flag_val)
+    
+    x = data[[var]]
+    t = data$datetime.utc
+    
+    flag_vec = rep(1, n)
+    flag_vec[is.na(x)] = 0
+    flag_vec[seq_len(min(4, n))] = pmax(flag_vec[seq_len(min(4, n))], 0.5)
+    
+    sus_end = logical(n)
+    fail_end = logical(n)
+    
+    sus_start_idx = 1L
+    fail_start_idx = 1L
+    
+    for (i in seq_len(n)) {
+      while (sus_start_idx < i &&
+             difftime(t[i], t[sus_start_idx], units = "hours") > sus_hours) {
+        sus_start_idx = sus_start_idx + 1L
+      }
+      
+      while (fail_start_idx < i &&
+             difftime(t[i], t[fail_start_idx], units = "hours") > fail_hours) {
+        fail_start_idx = fail_start_idx + 1L
+      }
+      
+      # Suspect window
+      vals = x[sus_start_idx:i]
+      if (sum(!is.na(vals)) > 1) {
+        rng = max(vals, na.rm = TRUE) - min(vals, na.rm = TRUE)
+        if (!is.na(rng) && rng <= current_tol) {
+          sus_end[i] = TRUE
+        }
+      }
+      
+      # Fail window
+      vals = x[fail_start_idx:i]
+      if (sum(!is.na(vals)) > 1) {
+        rng = max(vals, na.rm = TRUE) - min(vals, na.rm = TRUE)
+        if (!is.na(rng) && rng <= current_tol) {
+          fail_end[i] = TRUE
+        }
+      }
+    }
+    
+    # Paint suspect windows
+    for (i in which(sus_end)) {
+      start_i = i
+      while (start_i > 1 &&
+             difftime(t[i], t[start_i - 1], units = "hours") <= sus_hours) {
+        start_i = start_i - 1L
+      }
+      flag_vec[start_i:i] = pmax(flag_vec[start_i:i], 2)
+    }
+    
+    # Paint fail windows
+    for (i in which(fail_end)) {
+      start_i = i
+      while (start_i > 1 &&
+             difftime(t[i], t[start_i - 1], units = "hours") <= fail_hours) {
+        start_i = start_i - 1L
+      }
+      flag_vec[start_i:i] = pmax(flag_vec[start_i:i], 3)
+    }
+    
+    flag_vec[is.na(x)] = 0
+    flag_vec[seq_len(min(4, n))] = pmax(flag_vec[seq_len(min(4, n))], 0.5)
+    
+    data[[paste0("test.Flatline_", var)]] = flag_vec
   }
-  # Create overall test.Flatline column
-  data = data %>% 
-    mutate(test.Flatline = do.call(pmax, c(select(., starts_with('test.Flatline_')), na.rm=TRUE)))
-  return(data)
+  
+  data[, test.Flatline := do.call(pmax, c(.SD, na.rm = TRUE)),
+       .SDcols = patterns("^test\\.Flatline_")]
+  
+  # end_time = Sys.time()
+  # print(end_time-start_time)
+  return(as.data.frame(data))
 }
+# Flatline Test 3.1 - faster version of 3.0 by using data.table (WORKS, but still slow)
+# flatline_test = function(site_data, vars_to_test, num_flatline_sus, num_flatline_fail, flatline_thresholds) {
+#   if (!requireNamespace("data.table", quietly = TRUE)) {
+#     stop("Package 'data.table' is required for this version.")
+#   }
+#   
+#   library(data.table)
+#   
+#   # Convert to data.table and sort by time, keeping NA timestamps at the end
+#   data = as.data.table(site_data)
+#   setorder(data, datetime.utc)
+#   
+#   sus_hours  = num_flatline_sus
+#   fail_hours = num_flatline_fail
+#   
+#   n = nrow(data)
+#   
+#   # Identify rows with valid timestamps
+#   valid_time_idx = which(!is.na(data$datetime.utc))
+#   times_valid = data$datetime.utc[valid_time_idx]
+#   
+#   # Helper: locate the first row index within the valid-time subset
+#   window_start_idx = function(times, end_time, hours_back) {
+#     start_time = end_time - as.difftime(hours_back, units = "hours")
+#     findInterval(start_time, times) + 1L
+#   }
+#   
+#   for (var in vars_to_test) {
+#     current_tol = flatline_thresholds[[var]]
+#     
+#     if (exists("progress_print_option") && tolower(progress_print_option) %in% c('y','yes')) {
+#       print(paste('Processing flatline for:', var, '| Threshold:', current_tol, '| at', Sys.time()))
+#     }
+#     
+#     x = data[[var]]
+#     
+#     flag_vec = rep(1, n)
+#     flag_vec[is.na(x)] = 0
+#     flag_vec[seq_len(min(4, n))] = pmax(flag_vec[seq_len(min(4, n))], 0.5)
+#     
+#     sus_end = logical(n)
+#     fail_end = logical(n)
+#     
+#     # Work only on rows with valid timestamps
+#     for (j in seq_along(valid_time_idx)) {
+#       i = valid_time_idx[j]
+#       
+#       # Suspect window
+#       s_local = window_start_idx(times_valid, data$datetime.utc[i], sus_hours)
+#       
+#       if (s_local <= j) {
+#         idx_local = s_local:j
+#         vals = x[valid_time_idx[idx_local]]
+#         
+#         if (sum(!is.na(vals)) > 1) {
+#           rng = max(vals, na.rm = TRUE) - min(vals, na.rm = TRUE)
+#           if (!is.na(rng) && rng <= current_tol) {
+#             sus_end[i] = TRUE
+#           }
+#         }
+#       }
+#       
+#       # Fail window
+#       f_local = window_start_idx(times_valid, data$datetime.utc[i], fail_hours)
+#       
+#       if (f_local <= j) {
+#         idx_local = f_local:j
+#         vals = x[valid_time_idx[idx_local]]
+#         
+#         if (sum(!is.na(vals)) > 1) {
+#           rng = max(vals, na.rm = TRUE) - min(vals, na.rm = TRUE)
+#           if (!is.na(rng) && rng <= current_tol) {
+#             fail_end[i] = TRUE
+#           }
+#         }
+#       }
+#     }
+#     
+#     # Paint suspect windows
+#     idx_sus = which(sus_end)
+#     if (length(idx_sus) > 0) {
+#       for (i in idx_sus) {
+#         sus_start = data$datetime.utc[i] - as.difftime(sus_hours, units = "hours")
+#         idx = which(!is.na(data$datetime.utc) & data$datetime.utc >= sus_start & data$datetime.utc <= data$datetime.utc[i])
+#         flag_vec[idx] = pmax(flag_vec[idx], 2)
+#       }
+#     }
+#     
+#     # Paint fail windows
+#     idx_fail = which(fail_end)
+#     if (length(idx_fail) > 0) {
+#       for (i in idx_fail) {
+#         fail_start = data$datetime.utc[i] - as.difftime(fail_hours, units = "hours")
+#         idx = which(!is.na(data$datetime.utc) & data$datetime.utc >= fail_start & data$datetime.utc <= data$datetime.utc[i])
+#         flag_vec[idx] = pmax(flag_vec[idx], 3)
+#       }
+#     }
+#     
+#     # Restore missing-value rule and first-4-row rule
+#     flag_vec[is.na(x)] = 0
+#     flag_vec[seq_len(min(4, n))] = pmax(flag_vec[seq_len(min(4, n))], 0.5)
+#     
+#     data[[paste0("test.Flatline_", var)]] = flag_vec
+#   }
+#   
+#   data[, test.Flatline := do.call(pmax, c(.SD, na.rm = TRUE)),
+#        .SDcols = patterns("^test\\.Flatline_")]
+#   
+#   return(as.data.frame(data))
+# }
+# Flatline Test 3.0: [WORKS] Fixing the previous 2.0 version which was incorrectly flagging data that should have passed: ####
+# Time-based flatline test using datetime.utc
+#  --> now looks back on the previous time windows designated by num_flatline_sus and num_flatline_fail
+# flatline_test = function(site_data, vars_to_test, num_flatline_sus, num_flatline_fail, flatline_thresholds) {
+#   # Assumes site_data contains one site only
+#   # Sort data in time order before applying rolling windows
+#   data = site_data %>% arrange(datetime.utc)
+#   
+#   # Treat these inputs as time windows in hours
+#   sus_hours  = num_flatline_sus
+#   fail_hours = num_flatline_fail
+#   
+#   for (var in vars_to_test) {
+#     current_tol = flatline_thresholds[[var]]
+#     
+#     if (exists("progress_print_option") && tolower(progress_print_option) %in% c('y','yes')) {
+#       print(paste('Processing flatline for:', var, '| Threshold:', current_tol, '| at', Sys.time()))
+#     }
+#     
+#     x = data[[var]] # Current variable values for the site
+#     t = data$datetime.utc # Timestamp vector for the site
+#     n = nrow(data) # Number of rows in this site's data
+#     
+#     flag_vec = rep(1, n) # Initialize output flag vector. Default is 1 (pass) for all rows.
+#     flag_vec[is.na(x)] = 0 # Mark missing observations as 0 (test not applicable / not run on missing data)
+#     
+#     # Apply insufficient-data flag (0.5) to the first 4 rows of the site
+#     # This preserves your existing logic for early rows
+#     flag_vec[seq_len(min(4, n))] = pmax(flag_vec[seq_len(min(4, n))], 0.5)
+#     
+#     # Loop through each row and evaluate rolling windows ending at that row
+#     for (i in seq_len(n)) {
+#       
+#       # Start time for the suspect window:
+#       # look back sus_hours from the current timestamp
+#       sus_start = t[i] - as.difftime(sus_hours, units = "hours")
+#       
+#       # Row indices that fall inside the suspect time window
+#       # from sus_start up to the current time t[i]
+#       sus_idx = which(t >= sus_start & t <= t[i])
+#       
+#       # Only evaluate if the window contains more than one row
+#       if (length(sus_idx) > 1) {
+#         # Values inside the suspect window
+#         vals = x[sus_idx]
+#         
+#         # Skip if all values are missing
+#         if (!all(is.na(vals))) {
+#           # Range across the suspect window:
+#           # max value minus min value
+#           rng = max(vals, na.rm = TRUE) - min(vals, na.rm = TRUE)
+#           
+#           # If range does not exceed the tolerance, flag the entire window as suspect
+#           if (!is.na(rng) && rng <= current_tol) {
+#             flag_vec[sus_idx] = pmax(flag_vec[sus_idx], 2)
+#           }
+#         }
+#       }
+#       
+#       # Start time for the fail window:
+#       fail_start = t[i] - as.difftime(fail_hours, units = "hours") # look back fail_hours from the current timestamp
+#       fail_idx = which(t >= fail_start & t <= t[i]) # Row indices that fall inside the fail time window
+#       
+#       # Only evaluate if the window contains more than one row
+#       if (length(fail_idx) > 1) {
+#         vals = x[fail_idx] # Values inside the fail window
+#         # Skip if all values are missing
+#         if (!all(is.na(vals))) {
+#           # Range across the fail window:
+#           # max value minus min value
+#           rng = max(vals, na.rm = TRUE) - min(vals, na.rm = TRUE)
+#           
+#           # If range does not exceed the tolerance, flag the entire window as fail
+#           if (!is.na(rng) && rng <= current_tol) {
+#             flag_vec[fail_idx] = pmax(flag_vec[fail_idx], 3) 
+#           }
+#         }
+#       }
+#     }
+#     
+#     # Keep missing values flagged as 0
+#     # If a missing value is also in the first 4 rows, preserve 0.5 instead
+#     flag_vec[is.na(x)] = 0
+#     flag_vec[seq_len(min(4, n))] = pmax(flag_vec[seq_len(min(4, n))], 0.5)
+#     
+#     # Store the variable-specific flatline flag results in a new column
+#     data[[paste0("test.Flatline_", var)]] = flag_vec
+#   }
+#   
+#   # Combine variable-specific flatline flags into one overall flatline flag
+#   # pmax() returns the highest severity flag across variables for each row
+#   data = data %>%
+#     mutate(test.Flatline = do.call(
+#       pmax,
+#       c(select(., starts_with("test.Flatline_")), na.rm = TRUE)
+#     ))
+#   
+#   return(data)
+# }
+
+# Flatline Test 2.0 
+# flatline_test = function(site_data, vars_to_test, num_flatline_sus, num_flatline_fail, flatline_thresholds) {
+#   # Tests NEP data for consecutive unchanging values
+#   #  0 - Test not ran
+#   #  0.5 - Insufficient data
+#   #  1 - Pass
+#   #  2 - Suspect
+#   #  3 - Fail
+#   SUS_NUM = num_flatline_sus 
+#   FAIL_NUM = num_flatline_fail 
+#   data = site_data 
+#   
+#   for (var in vars_to_test) {
+#     current_tol = flatline_thresholds[[var]]
+#     if (exists("progress_print_option") && tolower(progress_print_option) %in% c('y','yes')) {
+#       print(paste('Processing flatline for:', var, '| Threshold:', current_tol, '| at', Sys.time()))
+#     }
+#     # We create a temporary column to calculate the run lengths
+#     # consecutive_id increments every time the value changes beyond the tolerance
+#     data = data %>% 
+#       mutate(
+#         # identify where the value changes more than the tolerance
+#         diff_val = c(0,abs(diff(.data[[var]]))),
+#         is_break = if_else(diff_val > current_tol | is.na(diff_val), 1, 0),
+#         run_id = cumsum(is_break)
+#       ) %>% 
+#       group_by(run_id) %>% 
+#       mutate(
+#         total_run_len = n(),
+#         # apply flag logic to whole group
+#         flag_val = case_when(
+#           # global_row_idx < 5 ~ 0.5, # insufficient data
+#           is.na(.data[[var]]) ~ 0,
+#           total_run_len >= FAIL_NUM ~ 3,
+#           total_run_len >= SUS_NUM ~ 2,
+#           TRUE ~ 1
+#           )
+#         ) %>% 
+#       ungroup()
+#     # Apply the "insufficient data" flag (0.5) to the first 4 rows globally
+#     data = data %>% 
+#       mutate(flag_val = if_else(row_number() < 5, 0.5, flag_val))
+#     # assign to final column name
+#     data[[paste0('test.Flatline_',var)]] = data$flag_val
+#     # clean up temporary columns
+#     data = data %>% select(-diff_val, -is_break, -run_id, -total_run_len, -flag_val)
+#   }
+#   # Create overall test.Flatline column
+#   data = data %>% 
+#     mutate(test.Flatline = do.call(pmax, c(select(., starts_with('test.Flatline_')), na.rm=TRUE)))
+#   return(data)
+# }
+
+
 
 # # # Testing flatline 2.0:
 # car_test = flatline_test(SF_car, vars_to_test, num_flatline_sus, num_flatline_fail, flatline_thresholds)
