@@ -1335,13 +1335,13 @@ nep_filtered_data <- lapply(nep_filtered_data, function(df) {
 })
 
 
-test_list = nep_unfiltered_data
 rename_flags = function(df) {
   df = df %>% 
     rename(flags_all = any_of('flags_revision')) %>% 
     select(-any_of('flags'))
 }
-test_list = lapply(test_list, rename_flags)
+nep_unfiltered_data = lapply(nep_unfiltered_data, rename_flags)
+nep_filtered_data = lapply(nep_filtered_data, rename_flags)
 
 # 6e. re-order columns:
 reorder_nep_data = function(data) {
