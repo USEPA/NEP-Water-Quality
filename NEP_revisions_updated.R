@@ -1129,6 +1129,9 @@ nep_filtered_data$Coastalbend = nep_filtered_data$Coastalbend %>%
 nep_unfiltered_data$Mobile = nep_unfiltered_data$Mobile %>% 
   filter(datetime_utc < as.POSIXct('2024-01-01 00:00:00')) %>% 
   arrange(datetime_utc)
+nep_filtered_data$Mobile = nep_filtered_data$Mobile %>% 
+  filter(datetime_utc < as.POSIXct('2024-01-01 00:00:00')) %>% 
+  arrange(datetime_utc)
 
 
 # ---- 3. Additional data review and flag adjustments ----
