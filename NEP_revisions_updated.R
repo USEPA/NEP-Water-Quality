@@ -1,7 +1,7 @@
 # Stephen R. Pacella
 # EPA Office of Research and Development, Pacific Coastal Ecology Branch, Newport, OR
 # Originally created: June 25, 2025
-# Last updated: August 10, 2026
+# Last updated: Dec 16, 2025
 # Edits by Andrew Mandovi (ORISE) denoted by 'AWM' initials
 
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -12,6 +12,9 @@
 #  3. Creates an output file containing the updated datasets: qa_data_list_revision.Rdata and pass_data_list_revision.Rdata
 # 
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+# to see how long the whole script takes:
+begin_script = Sys.time()
 
 # ---------- MUST DO BELOW STEP: SET LOCAL DIRECTORY --------------------------
 local_dir = 'C:/Users/Amandovi/OneDrive - Environmental Protection Agency (EPA)/Profile/Documents/R/'
@@ -381,7 +384,10 @@ qa_data_list$SanFrancisco$flags_revision <- qa_data_list$SanFrancisco$flags
 #Revision: Identified period of questionable salinity values and flagging this period as suspect (2)
 int_test <- interval(ymd_hms("2022-12-01 00:00:00 UTC"), ymd_hms("2022-12-30 00:00:00 UTC")) #period of questionable salinity
 bad_test <- which(qa_data_list$SanFrancisco$datetime.utc %within% int_test) #Find rows which fall within this time interval 
-qa_data_list$SanFrancisco$flags_revision[bad_test] <- 2 #Flag data as suspect
+qa_data_list$SanFrancisco$flags_revision[bad_test] = case_when(
+  flags_revision < 3 ~ 2, #Flag data as suspect unless it already is failing
+  TRUE ~ flags_revision
+) 
 
 
 ##### Tampa ###############################################
@@ -592,8 +598,8 @@ pass_data_list_revision$SanFrancisco = pass_data_list_revision$SanFrancisco %>% 
 qa_data_list_revision$Barnegat = qa_data_list_revision$Barnegat %>% select(-co2.ppm,-sensor.CO2pro,-sensor.CO2Pro)
 pass_data_list_revision$Barnegat = pass_data_list_revision$Barnegat %>% select(-co2.ppm,-sensor.CO2pro,-sensor.CO2Pro)
 
-qa_data_list_revision$LongIslandSound = qa_data_list_revision$LongIslandSound %>% select(-co2.ppm,sensor.SAMICO2) 
-pass_data_list_revision$LongIslandSound = pass_data_list_revision$LongIslandSound %>% select(-co2.ppm,sensor.SAMICO2)
+qa_data_list_revision$LongIslandSound = qa_data_list_revision$LongIslandSound %>% select(-co2.ppm,-sensor.SAMICO2) 
+pass_data_list_revision$LongIslandSound = pass_data_list_revision$LongIslandSound %>% select(-co2.ppm,-sensor.SAMICO2)
 
 qa_data_list_revision$Morro$sensor = 'Multiple'
 pass_data_list_revision$Morro$sensor = 'Multiple'
@@ -948,7 +954,7 @@ nep_unfiltered_data$SanFrancisco = nep_unfiltered_data$SanFrancisco %>%
 nep_unfiltered_data$Tampa = nep_unfiltered_data$Tampa %>% 
   mutate(across(c(temp_c,depth_m,sal_ppt,ph_tot,co2_ppm,pres_mbar,do_mgl), ~ na_if(.x, -99)))
 nep_filtered_data$Tampa = nep_unfiltered_data$Tampa %>% 
-  filter(flags_revision == 1)
+  filter(flags_revision == 1 & datetime_utc > cutoff_date)
 nep_filtered_data$Tampa = nep_filtered_data$Tampa %>% 
   mutate(across(c(temp_c,depth_m,sal_ppt,ph_tot,co2_ppm,pres_mbar,do_mgl), ~ na_if(.x, -99)))
 
@@ -1104,6 +1110,14 @@ pass_barnegat = qa_barnegat %>% filter(datetime_utc > cutoff_date & flags_revisi
 pass_casco = qa_casco %>% filter(datetime_utc > cutoff_date & flags_revision == 1)
 pass_delaware = qa_delaware %>% filter(datetime_utc > cutoff_date & flags_revision == 1)
 
+
+nep_unfiltered_data$Barnegat = qa_barnegat
+nep_unfiltered_data$Cascobay = qa_casco
+nep_unfiltered_data$DelawareInland = qa_delaware
+nep_filtered_data$Barnegat = pass_barnegat
+nep_filtered_data$Cascobay = pass_casco
+nep_filtered_data$DelawareInland = pass_delaware
+
 # ---- 2. Data Review: ----
 # Barnegat
 # remove any remaining NA datetimes (36 out of 474,000+ rows)
@@ -1168,6 +1182,7 @@ sf_cma = read.csv(paste0(odrive_data_path,'sf_nep_cma_260723.csv'))
 
 sf_data = rbind(sf_eos, sf_cma)
 sf_data = sf_data %>% 
+  mutate(datetime_utc = as.POSIXct(datetime_utc, tz='UTC')) %>% 
   arrange(datetime_utc)
 # assign final flag column (flag_manual) to flags_revision column
 sf_data$flags_revision = sf_data$flag_manual
@@ -1383,6 +1398,7 @@ timestamp <- format(Sys.time(), "%Y%m%d-%H%M%S")
 save(nep_unfiltered_data,file=paste0("O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_unfiltered_data_",timestamp,".Rdata"))
 save(nep_filtered_data,file=paste0("O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_filtered_data_",timestamp,".Rdata"))
 
-
-
-
+end_script = Sys.time()
+time_full_script = end_script - begin_script
+print('Full script elapsed over:')
+print(time_full_script)

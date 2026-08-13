@@ -59,7 +59,7 @@ qa_data_list = data_list
 # Begin QA Process:
 cat('Starting QA Process... Loading main QA .R script... \n')
 # start_time = Sys.time()
-source('qaqc_NEP_main.R')
+source('qaqc_NEP_main_old.R')
 
 # Barnegat:
 source('qaqc_NEP_Barnegat.R')
@@ -82,6 +82,8 @@ source('sf_master.R')
 cat('San Francisco Bay QA Process complete. \n')
 
 ############################ Save Data to O:Drive ################################
+
+
 timestamp <- format(Sys.time(), "%Y%m%d-%H%M")
 save(nep_unfiltered_data,file=paste0("O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_unfiltered_data_",timestamp,".Rdata"))
 save(nep_filtered_data,file=paste0("O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_filtered_data_",timestamp,".Rdata"))

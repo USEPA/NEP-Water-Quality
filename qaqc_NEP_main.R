@@ -63,6 +63,7 @@ gross_range_test = function(site_data, vars_to_test, user_thresholds, sensor_thr
   # Apply test logic
   data = data |> 
     mutate(across(all_of(vars_to_test), ~case_when(
+      is.na(.x) ~ 0, # test not ran if NA
       .x < sensor_thresholds[[cur_column()]]$min | .x > sensor_thresholds[[cur_column()]]$max ~ 3, # FAIL
       .x < user_thresholds[[cur_column()]]$min | .x > user_thresholds[[cur_column()]]$max ~ 2, # SUSPECT
       TRUE ~ 1 # PASS
@@ -413,57 +414,57 @@ flatline_test = function(site_data, vars_to_test, num_flatline_sus, num_flatline
 # }
 
 # Flatline Test 2.0 
-# flatline_test = function(site_data, vars_to_test, num_flatline_sus, num_flatline_fail, flatline_thresholds) {
-#   # Tests NEP data for consecutive unchanging values
-#   #  0 - Test not ran
-#   #  0.5 - Insufficient data
-#   #  1 - Pass
-#   #  2 - Suspect
-#   #  3 - Fail
-#   SUS_NUM = num_flatline_sus 
-#   FAIL_NUM = num_flatline_fail 
-#   data = site_data 
-#   
-#   for (var in vars_to_test) {
-#     current_tol = flatline_thresholds[[var]]
-#     if (exists("progress_print_option") && tolower(progress_print_option) %in% c('y','yes')) {
-#       print(paste('Processing flatline for:', var, '| Threshold:', current_tol, '| at', Sys.time()))
-#     }
-#     # We create a temporary column to calculate the run lengths
-#     # consecutive_id increments every time the value changes beyond the tolerance
-#     data = data %>% 
-#       mutate(
-#         # identify where the value changes more than the tolerance
-#         diff_val = c(0,abs(diff(.data[[var]]))),
-#         is_break = if_else(diff_val > current_tol | is.na(diff_val), 1, 0),
-#         run_id = cumsum(is_break)
-#       ) %>% 
-#       group_by(run_id) %>% 
-#       mutate(
-#         total_run_len = n(),
-#         # apply flag logic to whole group
-#         flag_val = case_when(
-#           # global_row_idx < 5 ~ 0.5, # insufficient data
-#           is.na(.data[[var]]) ~ 0,
-#           total_run_len >= FAIL_NUM ~ 3,
-#           total_run_len >= SUS_NUM ~ 2,
-#           TRUE ~ 1
-#           )
-#         ) %>% 
-#       ungroup()
-#     # Apply the "insufficient data" flag (0.5) to the first 4 rows globally
-#     data = data %>% 
-#       mutate(flag_val = if_else(row_number() < 5, 0.5, flag_val))
-#     # assign to final column name
-#     data[[paste0('test.Flatline_',var)]] = data$flag_val
-#     # clean up temporary columns
-#     data = data %>% select(-diff_val, -is_break, -run_id, -total_run_len, -flag_val)
-#   }
-#   # Create overall test.Flatline column
-#   data = data %>% 
-#     mutate(test.Flatline = do.call(pmax, c(select(., starts_with('test.Flatline_')), na.rm=TRUE)))
-#   return(data)
-# }
+flatline_test_old = function(site_data, vars_to_test, num_flatline_sus, num_flatline_fail, flatline_thresholds) {
+  # Tests NEP data for consecutive unchanging values
+  #  0 - Test not ran
+  #  0.5 - Insufficient data
+  #  1 - Pass
+  #  2 - Suspect
+  #  3 - Fail
+  SUS_NUM = num_flatline_sus
+  FAIL_NUM = num_flatline_fail
+  data = site_data
+
+  for (var in vars_to_test) {
+    current_tol = flatline_thresholds[[var]]
+    if (exists("progress_print_option") && tolower(progress_print_option) %in% c('y','yes')) {
+      print(paste('Processing flatline for:', var, '| Threshold:', current_tol, '| at', Sys.time()))
+    }
+    # We create a temporary column to calculate the run lengths
+    # consecutive_id increments every time the value changes beyond the tolerance
+    data = data %>%
+      mutate(
+        # identify where the value changes more than the tolerance
+        diff_val = c(0,abs(diff(.data[[var]]))),
+        is_break = if_else(diff_val > current_tol | is.na(diff_val), 1, 0),
+        run_id = cumsum(is_break)
+      ) %>%
+      group_by(run_id) %>%
+      mutate(
+        total_run_len = n(),
+        # apply flag logic to whole group
+        flag_val = case_when(
+          # global_row_idx < 5 ~ 0.5, # insufficient data
+          is.na(.data[[var]]) ~ 0,
+          total_run_len >= FAIL_NUM ~ 3,
+          total_run_len >= SUS_NUM ~ 2,
+          TRUE ~ 1
+          )
+        ) %>%
+      ungroup()
+    # Apply the "insufficient data" flag (0.5) to the first 4 rows globally
+    data = data %>%
+      mutate(flag_val = if_else(row_number() < 5, 0.5, flag_val))
+    # assign to final column name
+    data[[paste0('test.Flatline_',var)]] = data$flag_val
+    # clean up temporary columns
+    data = data %>% select(-diff_val, -is_break, -run_id, -total_run_len, -flag_val)
+  }
+  # Create overall test.Flatline column
+  data = data %>%
+    mutate(test.Flatline = do.call(pmax, c(select(., starts_with('test.Flatline_')), na.rm=TRUE)))
+  return(data)
+}
 
 
 
@@ -956,6 +957,61 @@ qaqc_nep = function(data, vars_to_test, user_thresholds, sensor_thresholds, spik
 #    2 = Suspect
 #    3 = Fail
 # ___________________________________________________
+  if (is.character(data$datetime.utc)) {
+    data$datetime.utc = as.POSIXct(data$datetime.utc, format = '%Y-%m-%d %H:%M:%S', tz = 'UTC')
+  }
+  data = data %>% 
+    arrange(datetime.utc)
+  site_list = data |> 
+    group_split(site.code)
+  results_list = list()
+  for (i in seq_along(site_list)) {
+    site_data = site_list[[i]]
+    site_code = unique(site_data$site.code)
+    cat('Processing site:',site_code,'\n')
+    ### Run QA tests ###
+    # gross range:
+    site_data = gross_range_test(site_data, vars_to_test, user_thresholds, sensor_thresholds)
+    # spike:
+    site_data = spike_test(site_data, vars_to_test, spike_thresholds)
+    # flat line:
+    site_data = flatline_test(site_data, vars_to_test, num_flatline_sus, num_flatline_fail, flatline_thresholds)
+    # climatology:
+    site_data = climatology_test(site_data, vars_to_test, seasonal_thresholds)
+    # rate of change:
+    site_data_interp = interpolate_data(site_data, vars_to_test, time_interval) # interpolate missing timestamps and values per site
+    data_interp = calc_rolling_sd(site_data_interp, vars_to_test,time_interval, min_non_na = 20)
+    site_data = rate_change_test(site_data, data_interp, vars_to_test, num_sd_for_rate_change)
+    # attenuated signal:
+    # site_data = attenuated_signal_test(site_data, data_interp, vars_to_test, attenuated_signal_thresholds, time_window, time_interval)
+    site_rollingSD = calc_rolling_sd(site_data_interp, vars_to_test, time_interval, sd_window_hrs=time_window_attsig, min_non_na = 20)
+    site_data = dynamic_attenuated_test(site_data, site_rollingSD, vars_to_test, attenuated_signal_thresholds)
+    
+    results_list[[i]] = site_data
+  }
+  return(bind_rows(results_list))
+}
+
+qaqc_nep_OLD = function(data, vars_to_test, user_thresholds, sensor_thresholds, spike_thresholds, seasonal_thresholds, time_window,
+                    time_interval, attenuated_signal_thresholds, num_sd_for_rate_change, num_flatline_sus, num_flatline_fail) {
+  # METADATA: ####
+  # Applies QARTOD testing across a single data-frame, assuming all data within the data-frame corresponds to a single NEP
+  # Assumed column names:
+  #    site.code - the code signature of that specific site within the NEP
+  #    datetime.utc - the date & time format used for time-sensitive testing
+  #    ph - pH on the Total Scale
+  #    temp.c - temperature in Celsius
+  #    sal.ppt - salinity in PSU (or parts-per-thousand)
+  #    do.mgl - dissolved oxygen in milligrams/liter
+  #    co2.ppm - dissolved CO2 in parts-per-million
+  
+  # Flags:
+  #    0 = Test not yet performed (default)
+  #    0.5 = Test not performed (insufficient data)
+  #    1 = Pass
+  #    2 = Suspect
+  #    3 = Fail
+  # ___________________________________________________
   if (is.character(data$datetime.utc)) {
     data$datetime.utc = as.POSIXct(data$datetime.utc, format = '%Y-%m-%d %H:%M:%S', tz = 'UTC')
   }
