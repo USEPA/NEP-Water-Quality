@@ -6,7 +6,7 @@
 # Assumes sf_data is already loaded in the workspace.
 
 # Set Working Directory: Adjust to local 
-setwd('C:/Users/spacella/OneDrive - Environmental Protection Agency (EPA)/NEP OA standards analysis')
+setwd(local_dir)
 
 # -------------------------------
 # Make a working copy of the data
@@ -495,192 +495,206 @@ tEnd   <- as.POSIXct("2019-06-22 21:10:00", tz = "UTC")
 mask <- dt_eos >= tStart & dt_eos <= tEnd
 sf_nep_eos$flag_manual[mask] <- 2
 
+sf_nep_eos$datetime_utc <- format(
+  as.POSIXct(sf_nep_eos$datetime_utc, tz = "UTC"),
+  format = "%Y-%m-%d %H:%M:%S",
+  tz = "UTC"
+)
+sf_nep_cma$datetime_utc <- format(
+  as.POSIXct(sf_nep_cma$datetime_utc, tz = "UTC"),
+  format = "%Y-%m-%d %H:%M:%S",
+  tz = "UTC"
+)
+
+
+# --> Final outputs: sf_nep_eos & sf_nep_cma 
+
 # -------------------------------------------------
 # 8) Recombine manual flags back into working copy
 # -------------------------------------------------
-sf_nep_copy <- sf_nep_copy %>%
-  mutate(flag_manual = NA_integer_)
-
-sf_nep_copy$flag_manual[sf_nep_copy$site_code == "CMA"] <- sf_nep_cma$flag_manual
-sf_nep_copy$flag_manual[sf_nep_copy$site_code == "EOS"] <- sf_nep_eos$flag_manual
-
-# -------------------------------------------------
-# Outputs:
-# - Figures are saved in the "figs" directory.
-# - sf_nep_copy: working copy with parsed datetime_utc and flag_manual.
-# - sf_nep_cma, sf_nep_eos: station subsets with updated flag_manual.
-# -------------------------------------------------
-
-
-# ------------------------------------------------------------
-# Additional figures: visualize how flag_manual differs from flags_2026
-# Append this block after recombining flag_manual into sf_nep_copy
-# Requires packages and helpers from the earlier script (ggplot2, dplyr, lubridate,
-# patchwork, theme_pub, save_plot, time_x, fig_dir).
-# ------------------------------------------------------------
-
-# Prepare comparison dataset (CMA and EOS)
-flag_cmp <- sf_nep_copy %>%
-  filter(site_code %in% c("CMA", "EOS")) %>%
-  mutate(
-    flag_2026   = flags_2026,
-    flag_manual = flag_manual,
-    change_bin = case_when(
-      is.na(flag_2026) | is.na(flag_manual) ~ "Missing",
-      flag_manual == flag_2026 ~ "No change",
-      TRUE ~ "Changed"
-    ),
-    change_label = case_when(
-      is.na(flag_2026) | is.na(flag_manual) ~ NA_character_,
-      flag_manual == flag_2026 ~ "No change",
-      TRUE ~ paste0(flag_2026, "\u2192", flag_manual)  # e.g., "1→2"
-    )
-  )
-
-# Palette for change_bin
-change_cols <- c("No change" = "grey60", "Changed" = "#D55E00", "Missing" = "grey85")
-
-# 1) Bar chart: counts by station of Changed / No change / Missing
-p_changes_by_site <- ggplot(flag_cmp %>%
-                              mutate(change_bin = factor(change_bin, levels = c("No change", "Changed", "Missing"))) %>%
-                              count(site_code, change_bin),
-                            aes(x = site_code, y = n, fill = change_bin)) +
-  geom_col(width = 0.7, color = "white") +
-  scale_fill_manual(values = change_cols, name = "Status") +
-  scale_y_continuous(labels = scales::comma) +
-  labs(title = "Manual flags vs. flags_2026: Status by Station",
-       x = "Station", y = "Number of records") +
-  theme_pub()
-save_plot(p_changes_by_site, "13_flag_changes_by_station.png", width = 7.5, height = 5.5, dpi = 300)
-
-# 2) Confusion heatmap: flags_2026 vs flag_manual (counts), faceted by station
-confusion_counts <- flag_cmp %>%
-  filter(!is.na(flag_2026), !is.na(flag_manual)) %>%
-  count(site_code, flag_2026 = factor(flag_2026), flag_manual = factor(flag_manual))
-
-p_confusion <- ggplot(confusion_counts,
-                      aes(x = flag_2026, y = flag_manual, fill = n)) +
-  geom_tile(color = "white") +
-  geom_text(aes(label = scales::comma(n)), size = 3.3, color = "black") +
-  scale_fill_viridis_c(option = "magma", name = "Count") +
-  facet_wrap(~ site_code, ncol = 2) +
-  labs(title = "flags_2026 vs flag_manual (Counts)",
-       x = "flags_2026", y = "flag_manual") +
-  theme_pub(base_size = 11) +
-  theme(panel.grid = element_blank(),
-        strip.text = element_text(face = "bold"))
-save_plot(p_confusion, "14_flag_confusion_heatmap.png", width = 9, height = 6.5, dpi = 300)
-
-# 3) pH time series with changed points highlighted; faceted by station
-#    Grey points = all records; colored points = where flag changed
-p_ts_changed <- ggplot(flag_cmp, aes(x = datetime_utc, y = ph)) +
-  geom_point(size = 0.5, alpha = 0.35, color = "grey60", na.rm = TRUE) +
-  geom_point(data = flag_cmp %>% filter(change_bin == "Changed"),
-             aes(color = factor(flag_manual)),
-             size = 0.9, alpha = 0.8, na.rm = TRUE) +
-  scale_color_brewer(palette = "Set1", name = "flag_manual") +
-  time_x +
-  facet_wrap(~ site_code, ncol = 1, scales = "free_y") +
-  labs(title = "pH time series (changed flags highlighted)",
-       x = NULL, y = "pH") +
-  theme_pub()
-save_plot(p_ts_changed, "15_pH_timeseries_changed_flags.png", width = 10, height = 7.5, dpi = 300)
-
-# 4) Year-month heatmap of changed points by station (temporal footprint)
-changes_monthly <- flag_cmp %>%
-  filter(change_bin == "Changed") %>%
-  mutate(YearMonth = lubridate::floor_date(datetime_utc, unit = "month")) %>%
-  count(site_code, YearMonth)
-
-# Ensure complete months range for better visualization (optional)
-if (nrow(changes_monthly) > 0) {
-  range_months <- seq(min(changes_monthly$YearMonth, na.rm = TRUE),
-                      max(changes_monthly$YearMonth, na.rm = TRUE),
-                      by = "1 month")
-  changes_monthly <- changes_monthly %>%
-    tidyr::complete(site_code, YearMonth = range_months, fill = list(n = 0))
-}
-
-p_changes_calendar <- ggplot(changes_monthly,
-                             aes(x = YearMonth, y = site_code, fill = n)) +
-  geom_tile(color = "white") +
-  scale_fill_viridis_c(option = "plasma", name = "Changed\ncount") +
-  scale_x_datetime(date_labels = "%Y-%m", date_breaks = "3 months") +
-  labs(title = "Changed manual flags by month",
-       x = "Year–Month", y = "Station") +
-  theme_pub() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-save_plot(p_changes_calendar, "16_changed_flags_by_month.png", width = 10, height = 4.8, dpi = 300)
-
-# 5) From-to change categories (e.g., "1→2") counts by station
-from_to_counts <- flag_cmp %>%
-  filter(!is.na(change_label), change_label != "No change") %>%
-  count(site_code, change_label) %>%
-  arrange(site_code, desc(n))
-
-p_from_to <- ggplot(from_to_counts,
-                    aes(x = reorder(change_label, -n), y = n, fill = site_code)) +
-  geom_col(position = "dodge", color = "white") +
-  scale_fill_brewer(palette = "Set2", name = "Station") +
-  scale_y_continuous(labels = scales::comma) +
-  labs(title = "Manual flag changes (from → to)",
-       x = "Change category", y = "Count") +
-  theme_pub() +
-  theme(axis.text.x = element_text(angle = 30, hjust = 1))
-save_plot(p_from_to, "17_flag_change_categories.png", width = 9.5, height = 5.5, dpi = 300)
-
-# ------------------------------------------------------------
-# New figure: Overlay two pH time series
-# 1) pH where flags_2026 == 1
-# 2) pH where flag_manual == 1
-# Faceted by station for clear comparison.
-# Append this block after flag_manual has been recombined into sf_nep_copy.
-# Relies on theme_pub(), save_plot(), and time_x from earlier script.
-# ------------------------------------------------------------
-
-suppressPackageStartupMessages({
-  library(dplyr)
-  library(ggplot2)
-})
-
-# Fallback point aesthetics (if not already defined)
-if (!exists("pt_size"))  pt_size  <- 0.6
-if (!exists("pt_alpha")) pt_alpha <- 0.6
-
-# Build overlay dataset
-pH_overlay <- bind_rows(
-  sf_nep_copy %>%
-    filter(flags_2026 == 1) %>%
-    mutate(Series = "flags_2026 == 1"),
-  sf_nep_copy %>%
-    filter(flag_manual == 1) %>%
-    mutate(Series = "flag_manual == 1")
-) %>%
-  filter(!is.na(datetime_utc), !is.na(ph)) %>%
-  mutate(Series = factor(Series, levels = c("flags_2026 == 1", "flag_manual == 1")))
-
-# Color palette for clarity and accessibility
-series_cols <- c("flags_2026 == 1" = "#333333",  # near-black
-                 "flag_manual == 1" = "#D55E00") # orange/red
-
-p_ph_overlay <- ggplot(pH_overlay, aes(x = datetime_utc, y = ph, color = Series)) +
-  geom_point(size = pt_size, alpha = pt_alpha, na.rm = TRUE) +
-  scale_color_manual(values = series_cols, name = "Series") +
-  time_x +
-  facet_wrap(~ site_code, ncol = 1, scales = "free_y") +
-  labs(
-    title = "pH time series: flags_2026 == 1 vs flag_manual == 1",
-    x = NULL, y = "pH"
-  ) +
-  theme_pub() +
-  theme(
-    legend.position = "top",
-    legend.title = element_text(face = "bold"),
-    strip.text = element_text(face = "bold")
-  )
-
-# Save figure
-save_plot(p_ph_overlay, "18_pH_flags2026_vs_manual_overlay.png", width = 10, height = 7.5, dpi = 300)
+# sf_nep_copy <- sf_nep_copy %>%
+#   mutate(flag_manual = NA_integer_)
+# 
+# sf_nep_copy$flag_manual[sf_nep_copy$site_code == "CMA"] <- sf_nep_cma$flag_manual
+# sf_nep_copy$flag_manual[sf_nep_copy$site_code == "EOS"] <- sf_nep_eos$flag_manual
+# 
+# # -------------------------------------------------
+# # Outputs:
+# # - Figures are saved in the "figs" directory.
+# # - sf_nep_copy: working copy with parsed datetime_utc and flag_manual.
+# # - sf_nep_cma, sf_nep_eos: station subsets with updated flag_manual.
+# # -------------------------------------------------
+# 
+# 
+# # ------------------------------------------------------------
+# # Additional figures: visualize how flag_manual differs from flags_2026
+# # Append this block after recombining flag_manual into sf_nep_copy
+# # Requires packages and helpers from the earlier script (ggplot2, dplyr, lubridate,
+# # patchwork, theme_pub, save_plot, time_x, fig_dir).
+# # ------------------------------------------------------------
+# 
+# # Prepare comparison dataset (CMA and EOS)
+# flag_cmp <- sf_nep_copy %>%
+#   filter(site_code %in% c("CMA", "EOS")) %>%
+#   mutate(
+#     flag_2026   = flags_2026,
+#     flag_manual = flag_manual,
+#     change_bin = case_when(
+#       is.na(flag_2026) | is.na(flag_manual) ~ "Missing",
+#       flag_manual == flag_2026 ~ "No change",
+#       TRUE ~ "Changed"
+#     ),
+#     change_label = case_when(
+#       is.na(flag_2026) | is.na(flag_manual) ~ NA_character_,
+#       flag_manual == flag_2026 ~ "No change",
+#       TRUE ~ paste0(flag_2026, "\u2192", flag_manual)  # e.g., "1→2"
+#     )
+#   )
+# 
+# # Palette for change_bin
+# change_cols <- c("No change" = "grey60", "Changed" = "#D55E00", "Missing" = "grey85")
+# 
+# # 1) Bar chart: counts by station of Changed / No change / Missing
+# p_changes_by_site <- ggplot(flag_cmp %>%
+#                               mutate(change_bin = factor(change_bin, levels = c("No change", "Changed", "Missing"))) %>%
+#                               count(site_code, change_bin),
+#                             aes(x = site_code, y = n, fill = change_bin)) +
+#   geom_col(width = 0.7, color = "white") +
+#   scale_fill_manual(values = change_cols, name = "Status") +
+#   scale_y_continuous(labels = scales::comma) +
+#   labs(title = "Manual flags vs. flags_2026: Status by Station",
+#        x = "Station", y = "Number of records") +
+#   theme_pub()
+# save_plot(p_changes_by_site, "13_flag_changes_by_station.png", width = 7.5, height = 5.5, dpi = 300)
+# 
+# # 2) Confusion heatmap: flags_2026 vs flag_manual (counts), faceted by station
+# confusion_counts <- flag_cmp %>%
+#   filter(!is.na(flag_2026), !is.na(flag_manual)) %>%
+#   count(site_code, flag_2026 = factor(flag_2026), flag_manual = factor(flag_manual))
+# 
+# p_confusion <- ggplot(confusion_counts,
+#                       aes(x = flag_2026, y = flag_manual, fill = n)) +
+#   geom_tile(color = "white") +
+#   geom_text(aes(label = scales::comma(n)), size = 3.3, color = "black") +
+#   scale_fill_viridis_c(option = "magma", name = "Count") +
+#   facet_wrap(~ site_code, ncol = 2) +
+#   labs(title = "flags_2026 vs flag_manual (Counts)",
+#        x = "flags_2026", y = "flag_manual") +
+#   theme_pub(base_size = 11) +
+#   theme(panel.grid = element_blank(),
+#         strip.text = element_text(face = "bold"))
+# save_plot(p_confusion, "14_flag_confusion_heatmap.png", width = 9, height = 6.5, dpi = 300)
+# 
+# # 3) pH time series with changed points highlighted; faceted by station
+# #    Grey points = all records; colored points = where flag changed
+# p_ts_changed <- ggplot(flag_cmp, aes(x = datetime_utc, y = ph)) +
+#   geom_point(size = 0.5, alpha = 0.35, color = "grey60", na.rm = TRUE) +
+#   geom_point(data = flag_cmp %>% filter(change_bin == "Changed"),
+#              aes(color = factor(flag_manual)),
+#              size = 0.9, alpha = 0.8, na.rm = TRUE) +
+#   scale_color_brewer(palette = "Set1", name = "flag_manual") +
+#   time_x +
+#   facet_wrap(~ site_code, ncol = 1, scales = "free_y") +
+#   labs(title = "pH time series (changed flags highlighted)",
+#        x = NULL, y = "pH") +
+#   theme_pub()
+# save_plot(p_ts_changed, "15_pH_timeseries_changed_flags.png", width = 10, height = 7.5, dpi = 300)
+# 
+# # 4) Year-month heatmap of changed points by station (temporal footprint)
+# changes_monthly <- flag_cmp %>%
+#   filter(change_bin == "Changed") %>%
+#   mutate(YearMonth = lubridate::floor_date(datetime_utc, unit = "month")) %>%
+#   count(site_code, YearMonth)
+# 
+# # Ensure complete months range for better visualization (optional)
+# if (nrow(changes_monthly) > 0) {
+#   range_months <- seq(min(changes_monthly$YearMonth, na.rm = TRUE),
+#                       max(changes_monthly$YearMonth, na.rm = TRUE),
+#                       by = "1 month")
+#   changes_monthly <- changes_monthly %>%
+#     tidyr::complete(site_code, YearMonth = range_months, fill = list(n = 0))
+# }
+# 
+# p_changes_calendar <- ggplot(changes_monthly,
+#                              aes(x = YearMonth, y = site_code, fill = n)) +
+#   geom_tile(color = "white") +
+#   scale_fill_viridis_c(option = "plasma", name = "Changed\ncount") +
+#   scale_x_datetime(date_labels = "%Y-%m", date_breaks = "3 months") +
+#   labs(title = "Changed manual flags by month",
+#        x = "Year–Month", y = "Station") +
+#   theme_pub() +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+# save_plot(p_changes_calendar, "16_changed_flags_by_month.png", width = 10, height = 4.8, dpi = 300)
+# 
+# # 5) From-to change categories (e.g., "1→2") counts by station
+# from_to_counts <- flag_cmp %>%
+#   filter(!is.na(change_label), change_label != "No change") %>%
+#   count(site_code, change_label) %>%
+#   arrange(site_code, desc(n))
+# 
+# p_from_to <- ggplot(from_to_counts,
+#                     aes(x = reorder(change_label, -n), y = n, fill = site_code)) +
+#   geom_col(position = "dodge", color = "white") +
+#   scale_fill_brewer(palette = "Set2", name = "Station") +
+#   scale_y_continuous(labels = scales::comma) +
+#   labs(title = "Manual flag changes (from → to)",
+#        x = "Change category", y = "Count") +
+#   theme_pub() +
+#   theme(axis.text.x = element_text(angle = 30, hjust = 1))
+# save_plot(p_from_to, "17_flag_change_categories.png", width = 9.5, height = 5.5, dpi = 300)
+# 
+# # ------------------------------------------------------------
+# # New figure: Overlay two pH time series
+# # 1) pH where flags_2026 == 1
+# # 2) pH where flag_manual == 1
+# # Faceted by station for clear comparison.
+# # Append this block after flag_manual has been recombined into sf_nep_copy.
+# # Relies on theme_pub(), save_plot(), and time_x from earlier script.
+# # ------------------------------------------------------------
+# 
+# suppressPackageStartupMessages({
+#   library(dplyr)
+#   library(ggplot2)
+# })
+# 
+# # Fallback point aesthetics (if not already defined)
+# if (!exists("pt_size"))  pt_size  <- 0.6
+# if (!exists("pt_alpha")) pt_alpha <- 0.6
+# 
+# # Build overlay dataset
+# pH_overlay <- bind_rows(
+#   sf_nep_copy %>%
+#     filter(flags_2026 == 1) %>%
+#     mutate(Series = "flags_2026 == 1"),
+#   sf_nep_copy %>%
+#     filter(flag_manual == 1) %>%
+#     mutate(Series = "flag_manual == 1")
+# ) %>%
+#   filter(!is.na(datetime_utc), !is.na(ph)) %>%
+#   mutate(Series = factor(Series, levels = c("flags_2026 == 1", "flag_manual == 1")))
+# 
+# # Color palette for clarity and accessibility
+# series_cols <- c("flags_2026 == 1" = "#333333",  # near-black
+#                  "flag_manual == 1" = "#D55E00") # orange/red
+# 
+# p_ph_overlay <- ggplot(pH_overlay, aes(x = datetime_utc, y = ph, color = Series)) +
+#   geom_point(size = pt_size, alpha = pt_alpha, na.rm = TRUE) +
+#   scale_color_manual(values = series_cols, name = "Series") +
+#   time_x +
+#   facet_wrap(~ site_code, ncol = 1, scales = "free_y") +
+#   labs(
+#     title = "pH time series: flags_2026 == 1 vs flag_manual == 1",
+#     x = NULL, y = "pH"
+#   ) +
+#   theme_pub() +
+#   theme(
+#     legend.position = "top",
+#     legend.title = element_text(face = "bold"),
+#     strip.text = element_text(face = "bold")
+#   )
+# 
+# # Save figure
+# save_plot(p_ph_overlay, "18_pH_flags2026_vs_manual_overlay.png", width = 10, height = 7.5, dpi = 300)
 
 # ------------------------------------------------------------
 # Generated files:

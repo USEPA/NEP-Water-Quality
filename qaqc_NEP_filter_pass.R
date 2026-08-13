@@ -179,7 +179,7 @@ qa_data_list$NYNJH = data_list$NYNJH %>%
     ),
     do_flags = case_when(
       flag.do.mgl == 'A' | flag.do.mgl == 'C' ~ 1,
-      flag.do.mgl == 'S' | flag.do.mgl == 'S' ~ 2,
+      flag.do.mgl == 'S' | flag.do.mgl == 'P' ~ 2,
       flag.do.mgl == 'R' ~ 3,
       TRUE ~ 0
     ),
@@ -191,7 +191,7 @@ qa_data_list$NYNJH = data_list$NYNJH %>%
     ),
     temp_flags = case_when(
       flag.temp.c == 'A' | flag.temp.c == 'C' ~ 1,
-      flag.temp.c == 'S' | flag.temp.c == 'S' ~ 2,
+      flag.temp.c == 'S' | flag.temp.c == 'P' ~ 2,
       flag.temp.c == 'R' ~ 3,
       TRUE ~ 0
     )
@@ -347,4 +347,9 @@ pass_data_list$Pensacola = pass_data_list$Pensacola %>%
   mutate(region = 'Gulf')
 pass_data_list$Tampa = pass_data_list$Tampa %>% 
   mutate(region = 'Gulf')
+
+# Saving
+
+save(qa_data_list,file=paste0("O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/4. Finalized Data from NEPs/qa_data_list_test.Rdata"))
+save(pass_data_list,file=paste0("O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/4. Finalized Data from NEPs/pass_data_list_test.Rdata"))
 

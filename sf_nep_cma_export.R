@@ -9,7 +9,8 @@ export_df$datetime_utc <- format(
 )
 
 # Write to CSV (no row names)
-write.csv(export_df, file = "sf_nep_cma_260723.csv", row.names = FALSE, na = "")
+# write.csv(export_df, file = "sf_nep_cma_260723.csv", row.names = FALSE, na = "")
+cat('skipping write.csv for test')
 
 
 # Ensure datetime_utc is written as "YYYY-MM-DD HH:MM:SS" (UTC), e.g., 00:00:00 for midnight
@@ -21,4 +22,5 @@ export_df$datetime_utc <- format(
 )
 
 # Write to CSV (no row names)
-write.csv(export_df, file = "sf_nep_eos_260723.csv", row.names = FALSE, na = "")
+# write.csv(export_df, file = "sf_nep_eos_260723.csv", row.names = FALSE, na = "")
+cat('skipping write.csv for test')

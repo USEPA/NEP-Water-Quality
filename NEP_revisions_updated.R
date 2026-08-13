@@ -1176,11 +1176,14 @@ nep_filtered_data$NYNJH = nep_unfiltered_data$NYNJH %>%
 
 # ---- 4. Adding manual-QC version of San Francisco ----
 # manual QC performed by Stephen Pacella, July 2026, building on previous QA performed 
-odrive_data_path = 'O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/'
-sf_eos = read.csv(paste0(odrive_data_path,'sf_nep_eos_260723.csv'))
-sf_cma = read.csv(paste0(odrive_data_path,'sf_nep_cma_260723.csv'))
+source('sf_master.R')
 
-sf_data = rbind(sf_eos, sf_cma)
+# for testing:
+# odrive_data_path = 'O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/'
+# sf_eos = read.csv(paste0(odrive_data_path,'sf_nep_eos_260723.csv'))
+# sf_cma = read.csv(paste0(odrive_data_path,'sf_nep_cma_260723.csv'))
+
+sf_data = rbind(sf_nep_eos, sf_nep_cma)
 sf_data = sf_data %>% 
   mutate(datetime_utc = as.POSIXct(datetime_utc, tz='UTC')) %>% 
   arrange(datetime_utc)

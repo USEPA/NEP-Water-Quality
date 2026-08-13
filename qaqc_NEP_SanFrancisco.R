@@ -51,7 +51,7 @@ load(paste0(Odrive_data_path,'nep_unfiltered_data_20260107-165206.Rdata'))
 load(paste0(Odrive_data_path,'nep_filtered_data_20260107-165206.Rdata'))
 
 # Set Working Directory: Adjust to local 
-setwd('C:/Users/spacella/OneDrive - Environmental Protection Agency (EPA)/NEP OA standards analysis')
+setwd(local_dir)
 
 # Check if column names are using _ or . --> adjust to '.' temporarily 
 if (any(grepl('\\_', colnames(nep_unfiltered_data$SanFrancisco)))) {

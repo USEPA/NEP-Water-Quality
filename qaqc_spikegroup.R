@@ -63,6 +63,8 @@ flag_clusters_between_twos <- function(df,
 # - Writes to a new column to preserve the original flags
 # 3) Split stations to ease review (CMA and EOS)
 # --------------------------------------------
+colnames(sf_recombined) = gsub('.','_',colnames(sf_recombined), fixed=TRUE)
+
 sf_nep_cma <- sf_recombined %>% filter(site_code == "CMA")
 sf_nep_cma <- flag_clusters_between_twos(
   df = sf_nep_cma,
