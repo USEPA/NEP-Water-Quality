@@ -383,12 +383,12 @@ qa_data_list$SanFrancisco$flags_revision <- qa_data_list$SanFrancisco$flags
 #Comment: sal.ppt.qc displays 1 (pass) when sal values > 40, these salinity values are unlikely at site: CARQ, 38.0657 -122.2302
 #Revision: Identified period of questionable salinity values and flagging this period as suspect (2)
 int_test <- interval(ymd_hms("2022-12-01 00:00:00 UTC"), ymd_hms("2022-12-30 00:00:00 UTC")) #period of questionable salinity
-bad_test <- which(qa_data_list$SanFrancisco$datetime.utc %within% int_test) #Find rows which fall within this time interval 
-qa_data_list$SanFrancisco$flags_revision[bad_test] = case_when(
-  flags_revision < 3 ~ 2, #Flag data as suspect unless it already is failing
-  TRUE ~ flags_revision
-) 
-
+bad_test <- qa_data_list$SanFrancisco$datetime.utc %within% int_test  # logical is fine; no need for which()
+# work with the column explicitly
+qa_data_list$SanFrancisco$flags_revision[bad_test] <- dplyr::case_when(
+  qa_data_list$SanFrancisco$flags_revision[bad_test] < 3 ~ 2L,
+  TRUE ~ qa_data_list$SanFrancisco$flags_revision[bad_test]
+)
 
 ##### Tampa ###############################################
 
@@ -1386,6 +1386,36 @@ reorder_nep_data = function(data) {
 nep_unfiltered_data = lapply(nep_unfiltered_data, reorder_nep_data)
 nep_filtered_data = lapply(nep_filtered_data, reorder_nep_data)
 
+# 8.14.26 Indian River Lagoon Hotfix: stop letting NA/blank flag values propagate into flags_revision and flags_all ####
+
+flag_cols <- c("ph_flags","temp_flags","do_flags","pres_flags","co2_flags","sal_flags")
+df <- nep_unfiltered_data$IndianRiverLagoon
+present <- intersect(flag_cols, names(df))
+
+to_flag_int <- function(x) {
+  if (is.factor(x)) x <- as.character(x)
+  x <- trimws(as.character(x))
+  x[x == ""] <- NA_character_
+  xl <- tolower(x)
+  xl[xl %in% c("a","pass","accepted")] <- "1"
+  xl[xl %in% c("s","suspect","questionable")] <- "2"
+  xl[xl %in% c("r","reject","fail")] <- "3"
+  out <- suppressWarnings(as.integer(xl))
+  out[out == 15L] <- 1L
+  out
+}
+
+vals <- lapply(present, function(col) to_flag_int(df[[col]]))
+worst <- do.call(pmax, c(vals, na.rm = TRUE))
+worst[is.infinite(worst)] <- NA_integer_
+
+df$flags_all <- worst
+nep_unfiltered_data$IndianRiverLagoon <- df
+
+# # quick check
+# table(df$flags_all, useNA = "ifany")
+#### End Indian River Lagoon Hotfix ####
+
 # # arrange all based on UTC time:
 # nep_unfiltered_data <- map(nep_unfiltered_data, ~ arrange(.x, datetime_utc))
 # nep_filtered_data = map(nep_filtered_data, ~arrange(.x, datetime_utc))
@@ -1398,8 +1428,8 @@ nosleep_off() # turn off no-sleep setting
 
 timestamp <- format(Sys.time(), "%Y%m%d-%H%M%S")
 
-save(nep_unfiltered_data,file=paste0("O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_unfiltered_data_",timestamp,".Rdata"))
-save(nep_filtered_data,file=paste0("O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_filtered_data_",timestamp,".Rdata"))
+# save(nep_unfiltered_data,file=paste0("O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_unfiltered_data_",timestamp,".Rdata"))
+# save(nep_filtered_data,file=paste0("O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/nep_filtered_data_",timestamp,".Rdata"))
 
 end_script = Sys.time()
 time_full_script = end_script - begin_script
