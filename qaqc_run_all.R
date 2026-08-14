@@ -49,8 +49,8 @@ progress_print_option = readline(prompt='Would you like timestamped progress sta
 
 #
 # Set local path to location of folder with saved scripts (including this one)
-local_R_path = 'C:/Users/amandovi/OneDrive - Environmental Protection Agency (EPA)/Profile/Documents/R/'
-setwd(local_R_path)
+local_dir = 'C:/Users/amandovi/OneDrive - Environmental Protection Agency (EPA)/Profile/Documents/R/'
+setwd(local_dir)
 # # # # # # 
 
 # create initial qa_data_list from data_list - will be added with QA'd NEP data (flags added, no filtering)
