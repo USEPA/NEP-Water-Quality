@@ -73,7 +73,7 @@ SF_car = nep_unfiltered_data$SanFrancisco %>%
   filter(site.code == 'CMA')
 
 # (3) Run QAQC on the individual sites, separately
-progress_print_option = readline(prompt='Would you like timestamped progress statements in R Console through the process for troubleshooting? (y/n): ')
+# progress_print_option = readline(prompt='Would you like timestamped progress statements in R Console through the process for troubleshooting? (y/n): ')
 
 source('qaqc_NEP_SF_Tiburon.R')
 cat('SF Bay - Tiburon QA process complete. \n')
