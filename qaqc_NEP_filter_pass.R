@@ -3,12 +3,15 @@
 # Originally created: Apr 10, 2025
 # Last updated: Apr 18, 2025
 
+
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 #                    This R script performs the following: 
 #                    -------------------------------------
 #  1. Performs filters on the NEP data set 
 #      - based on each NEP's specific QA/QC process, if any
 #  2. Creates an output file containing the filtered dataset: pass_data_list.Rdata 
+#  NOTE: This saves qa_data_list_test and pass_data_list_test to not over-write previous versions. 
+#       They can be renamed either in the code or manually in file editor but it is recommended that the script doesn't change!
 # 
 # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
