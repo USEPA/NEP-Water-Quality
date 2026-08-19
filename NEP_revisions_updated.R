@@ -1412,6 +1412,13 @@ worst[is.infinite(worst)] <- NA_integer_
 df$flags_all <- worst
 nep_unfiltered_data$IndianRiverLagoon <- df
 
+# coastal bend hotfix: changing '4' flag to '3' for fail
+nep_unfiltered_data$Coastalbend = nep_unfiltered_data$Coastalbend %>% 
+  mutate(flags_all = case_when(
+    flags_all == 4 ~ 3,
+    TRUE ~ flags_all
+  ))
+
 # # quick check
 # table(df$flags_all, useNA = "ifany")
 #### End Indian River Lagoon Hotfix ####
