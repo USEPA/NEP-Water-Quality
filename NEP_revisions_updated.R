@@ -1173,10 +1173,15 @@ nep_filtered_data$NYNJH = nep_unfiltered_data$NYNJH %>%
   filter(flags_revision == 1 & datetime_utc > cutoff_date)
 
 
-
 # ---- 4. Adding manual-QC version of San Francisco ----
+# create temporary versions of nep_filtered and nep_unfiltered so they don't get over-ran. 
+nep_unfiltered_temp = nep_unfiltered_data
+nep_filtered_temp = nep_filtered_data
 # manual QC performed by Stephen Pacella, July 2026, building on previous QA performed 
 source('sf_master.R')
+
+nep_unfiltered_data = nep_unfiltered_temp
+nep_filtered_data = nep_filtered_temp
 
 # for testing:
 # odrive_data_path = 'O:/PRIV/CPHEA/PESD/NEW/EPA/PCEB/Acidification Monitoring/NEP Acidification Impacts and WQS/Data/5. Revised Data June 2025/'
@@ -1191,6 +1196,8 @@ sf_data = sf_data %>%
 sf_data$flags_revision = sf_data$flag_manual
 sf_data = sf_data %>% 
   select(-flags, -flags_2026, -flag_max, -flag_manual)
+
+# Overwrite previous SF data with new SF data:
 nep_unfiltered_data$SanFrancisco = sf_data
 nep_filtered_data$SanFrancisco = sf_data %>% 
   filter(datetime_utc > cutoff_date & flags_revision == 1)
