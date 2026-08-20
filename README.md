@@ -51,3 +51,6 @@ The **PREFIX** of a R script file dictates the file's category:
 - **plot_**: scripts containing R code for plotting visualizations of data
 - **test_**: scripts written  for testing, practice, or reference material
 
+**III. Final Revisions: creating nep_unfiltered_data and nep_filtered_data**
+- uses NEP_revisions_updated.R script to perform all of the revisions and final adjustments
+
